@@ -1,0 +1,13 @@
+/dist
+build/
+node_modules/
+*.logs
+docs/
+.vercel
+.vercelignore
+vercel.json
+package-lock.json
+.claude/
+.DS_Store
+.idea/
+.vscode/
