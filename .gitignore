@@ -3,6 +3,7 @@ build/
 node_modules/
 *.logs
 docs/
+.worktrees/
 .vercel
 .vercelignore
 vercel.json
