@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+src/data/content/*.json
+src/data/search-index.json
+src/data/index.json
+.DS_Store
+*.log
+.vercel
