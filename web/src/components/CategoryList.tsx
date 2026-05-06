@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChevronRight, ChevronDown, Circle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import categoryIndex from '../data/index.json'
+import { useAppStore } from '../stores/appStore'
 
 interface Category {
   id: string
@@ -21,10 +22,50 @@ interface CategoryData {
 }
 
 export function CategoryList() {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const navigate = useNavigate()
+  const storeExpanded = useAppStore(s => s.expandedCategories)
+  const setStoreExpanded = useAppStore(s => s.setExpandedCategories)
+  const savedScroll = useAppStore(s => s.scrollPosition)
+  const setScrollPosition = useAppStore(s => s.setScrollPosition)
+
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(storeExpanded))
   const [categoryData, setCategoryData] = useState<Record<string, CategoryData>>({})
   const [loadingCategories, setLoadingCategories] = useState<Set<string>>(new Set())
-  const navigate = useNavigate()
+  const restoredScroll = useRef(false)
+
+  // On mount: fetch data for saved expanded categories and restore scroll
+  useEffect(() => {
+    if (storeExpanded.length === 0) return
+    for (const catId of storeExpanded) {
+      if (!categoryData[catId]) {
+        setLoadingCategories(prev => new Set(prev).add(catId))
+        fetch(`/data/content/${catId}.json`)
+          .then(res => res.json())
+          .then(data => {
+            setCategoryData(prev => ({ ...prev, [catId]: data }))
+          })
+          .catch(() => console.error('Failed to load category:', catId))
+          .finally(() => {
+            setLoadingCategories(prev => {
+              const next = new Set(prev)
+              next.delete(catId)
+              return next
+            })
+          })
+      }
+    }
+  }, [])
+
+  // Restore scroll position after data loads
+  useEffect(() => {
+    if (savedScroll > 0 && !restoredScroll.current) {
+      const allLoaded = [...expanded].every(id => categoryData[id])
+      if (allLoaded) {
+        restoredScroll.current = true
+        requestAnimationFrame(() => window.scrollTo(0, savedScroll))
+      }
+    }
+  })
 
   const toggleCategory = async (categoryId: string) => {
     const newExpanded = new Set(expanded)
@@ -51,9 +92,11 @@ export function CategoryList() {
       }
     }
     setExpanded(newExpanded)
+    setStoreExpanded(Array.from(newExpanded))
   }
 
   const handleQuestionClick = (categoryId: string, questionId: string) => {
+    setScrollPosition(window.scrollY)
     navigate(`/question/${categoryId}/${questionId}`)
   }
 

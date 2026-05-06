@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { useAppStore } from '../stores/appStore'
 
 interface Question {
   id: string
@@ -19,6 +20,7 @@ export function QuestionDetail() {
   const navigate = useNavigate()
   const [data, setData] = useState<CategoryData | null>(null)
   const [loading, setLoading] = useState(true)
+  const setLastQuestion = useAppStore(s => s.setLastQuestion)
 
   useEffect(() => {
     const loadData = async () => {
@@ -37,6 +39,17 @@ export function QuestionDetail() {
 
   const currentIndex = data?.questions.findIndex(q => q.id === questionId) ?? -1
   const currentQuestion = data?.questions[currentIndex]
+
+  // Save last viewed question to store
+  useEffect(() => {
+    if (!loading && currentQuestion) {
+      setLastQuestion({
+        categoryId: categoryId!,
+        questionId: questionId!,
+        title: currentQuestion.title
+      })
+    }
+  }, [loading, currentQuestion, setLastQuestion])
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < (data?.questions.length ?? 0) - 1
 
