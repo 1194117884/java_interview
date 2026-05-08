@@ -67,7 +67,14 @@ function getCategoryName(dirName) {
     '非技术问题': '非技术问题',
     '其他': '其他',
     '其他专属内容': '其他专属内容',
-    'Oracle': 'Oracle'
+    'Oracle': 'Oracle',
+    'JavaScript': 'JavaScript',
+    'TypeScript': 'TypeScript',
+    'React': 'React',
+    'CSS': 'CSS',
+    'HTML': 'HTML',
+    '浏览器与网络': '浏览器与网络',
+    '前端工程化': '前端工程化'
   }
   return map[dirName] || dirName
 }
