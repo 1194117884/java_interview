@@ -7,6 +7,13 @@ interface LastQuestion {
   title: string
 }
 
+export interface RandomQuizItem {
+  id: string
+  title: string
+  category: string
+  categoryId: string
+}
+
 interface AppState {
   theme: 'light' | 'dark'
   setTheme: (theme: 'light' | 'dark') => void
@@ -20,6 +27,8 @@ interface AppState {
   setScrollPosition: (position: number) => void
   lastQuestion: LastQuestion | null
   setLastQuestion: (question: LastQuestion | null) => void
+  randomQuizQuestions: RandomQuizItem[]
+  setRandomQuizQuestions: (questions: RandomQuizItem[]) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -36,7 +45,9 @@ export const useAppStore = create<AppState>()(
       scrollPosition: 0,
       setScrollPosition: (position) => set({ scrollPosition: position }),
       lastQuestion: null,
-      setLastQuestion: (question) => set({ lastQuestion: question })
+      setLastQuestion: (question) => set({ lastQuestion: question }),
+      randomQuizQuestions: [],
+      setRandomQuizQuestions: (questions) => set({ randomQuizQuestions: questions })
     }),
     {
       name: 'java-interview-storage',

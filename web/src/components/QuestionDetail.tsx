@@ -56,14 +56,14 @@ export function QuestionDetail() {
   const goToPrev = () => {
     if (hasPrev && data) {
       const prev = data.questions[currentIndex - 1]
-      navigate(`/question/${categoryId}/${prev.id}`)
+      navigate(`/question/${categoryId}/${prev.id}`, { replace: true })
     }
   }
 
   const goToNext = () => {
     if (hasNext && data) {
       const next = data.questions[currentIndex + 1]
-      navigate(`/question/${categoryId}/${next.id}`)
+      navigate(`/question/${categoryId}/${next.id}`, { replace: true })
     }
   }
 
