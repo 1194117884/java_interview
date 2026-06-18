@@ -11,51 +11,59 @@
 - ⚡ **快速加载**: 按需加载分类，首屏秒开
 - 🎨 **精美设计**: 温暖的奶油色系，珊瑚色强调
 
-## Vercel 部署指南
+## Cloudflare Pages 部署指南
 
-### 方式一：Vercel CLI（推荐）
+### 方式一：Wrangler CLI（直接上传）
 
 ```bash
 # 1. 进入项目目录
 cd web
 
-# 2. 安装 Vercel CLI（如果还没有）
-npm i -g vercel
+# 2. 安装 Wrangler CLI（如果还没有）
+npm i -g wrangler
 
-# 3. 登录 Vercel
-vercel login
+# 3. 登录 Cloudflare
+wrangler login
 
-# 4. 部署
-vercel --prod
+# 4. 构建项目
+npm run build
 
-# 5. 绑定自定义域名
+# 5. 部署到 Cloudflare Pages
+wrangler pages deploy ./dist --project-name=java-interview
+
+# 6. 绑定自定义域名
+wrangler pages project set-domain java-interview your-domain.com
 ```
 
 ### 方式二：Git 集成（自动部署）
 
-```bash
-# 1. 创建 git 仓库并推送
-cd web
-git init
-git add .
-git commit -m "Initial commit"
-
-# 2. 推送到 GitHub/GitLab
-# 然后在 Vercel Dashboard 中导入项目
-
-# 3. 配置环境变量（如果需要）
-# 在 Vercel Dashboard → Project Settings → Environment Variables 中设置
-```
+1. Push 项目到 GitHub/GitLab
+2. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+3. 进入 **Workers & Pages** → **创建** → **Pages** → **连接到 Git**
+4. 选择仓库，配置构建设置：
+   - **构建命令**: `npm run build`
+   - **构建输出目录**: `dist`
+   - **根目录**: `web`
+5. 点击部署 — 之后每次 push 都会自动部署
 
 ### 配置自定义域名
 
-1. 在 Vercel Dashboard 进入项目
-2. 点击 **Settings** → **Domains**
-3. 添加 `自有域名`
-4. 按提示在 DNS 服务商添加 CNAME 记录：
+1. 在 Cloudflare Dashboard 进入 Pages 项目
+2. 点击 **自定义域** → **设置自定义域**
+3. 输入域名（如 `interview.yourdomain.com`）
+4. 如果域名已在 Cloudflare 托管，DNS 记录会自动配置
+5. 如果域名在其他服务商，按提示添加 CNAME 记录：
    - 类型: CNAME
    - 名称: interview
-   - 值: cname.vercel-dns.com
+   - 值: `java-interview.pages.dev`
+
+### 本地预览
+
+```bash
+# 构建后本地预览
+npm run build
+npx wrangler pages dev ./dist
+```
 
 ## 本地开发
 
@@ -98,7 +106,7 @@ web/
 │   ├── hooks/           # 自定义 Hooks
 │   ├── stores/          # 状态管理
 │   └── styles/          # 全局样式
-├── vercel.json          # Vercel 部署配置
+├── wrangler.jsonc       # Cloudflare Pages 配置
 └── package.json
 ```
 

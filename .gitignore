@@ -4,9 +4,6 @@ node_modules/
 *.logs
 docs/
 .worktrees/
-.vercel
-.vercelignore
-vercel.json
 package-lock.json
 .claude/
 .DS_Store

@@ -1,0 +1,2 @@
+# SPA fallback — rewrite all routes to index.html (client-side routing)
+/* /index.html 200

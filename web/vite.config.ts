@@ -41,6 +41,8 @@ const mdsPlugin = () => ({
     })
   },
   closeBundle() {
+    if (!fs.existsSync(mdsDir)) return
+
     // Copy mds images to dist folder after build
     const distDir = path.join(__dirname, 'dist', 'mds')
     if (!fs.existsSync(distDir)) {
