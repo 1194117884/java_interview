@@ -17,6 +17,10 @@ export interface JobProfile {
   description: string
   skills: string[]
   priorities: string[]
+  responsibilities: string[]
+  requirements: string[]
+  businessKeywords: string[]
+  scoringWeights: Record<string, number>
 }
 
 export interface SavedInterviewProfile {
@@ -278,6 +282,13 @@ export function analyzeJobDescription(title: string, description: string): JobPr
     if (rule.name === '微服务与分布式') return '追问一致性、幂等和异常补偿'
     return `验证 ${rule.name} 的原理、实践和边界`
   })
+  const fragments = description.split(/[。；;\n]/).map(item => item.trim()).filter(Boolean)
+  const responsibilities = fragments.filter(item => /职责|负责|主导|设计|推动/.test(item))
+  const requirements = fragments.filter(item => /要求|熟悉|掌握|经验|具备|精通/.test(item))
+  const businessKeywords = ['支付', '订单', '电商', '库存', '金融', 'SaaS'].filter(keyword => text.includes(keyword.toLowerCase()))
+  const scoringWeights = Object.fromEntries(matched.map(rule => [rule.name,
+    rule.name === '高并发与稳定性' || rule.name === '微服务与分布式' || rule.name === '系统设计' ? 1.5 : 1,
+  ]))
 
   return {
     title: title || 'Java 后端工程师',
@@ -285,6 +296,10 @@ export function analyzeJobDescription(title: string, description: string): JobPr
     description,
     skills: skills.length ? skills : ['Java 基础', '项目表达', '问题解决'],
     priorities: priorities.length ? priorities : ['验证 Java 基础与项目经历', '根据回答决定追问深度'],
+    responsibilities,
+    requirements,
+    businessKeywords,
+    scoringWeights,
   }
 }
 

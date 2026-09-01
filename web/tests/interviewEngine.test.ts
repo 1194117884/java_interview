@@ -143,3 +143,13 @@ test('saving a company profile replaces a prior profile with the same name', () 
     assert.equal(second[0].company.culture, '高可用优先')
     assert.equal(second[0].updatedAt, '2026/9/2')
 })
+
+test('JD analysis extracts responsibilities, requirements and weighted skills', () => {
+    const job = analyzeJobDescription('支付后端工程师', '岗位职责：负责支付订单链路和高并发系统设计。任职要求：熟悉 Java、Redis、MySQL、幂等和分布式事务，有支付项目经验。')
+
+    assert.ok(job.responsibilities.some(item => item.includes('支付订单链路')))
+    assert.ok(job.requirements.some(item => item.includes('Redis')))
+    assert.ok(job.businessKeywords.includes('支付'))
+    assert.ok(job.scoringWeights['高并发与稳定性'] > 1)
+    assert.ok(job.scoringWeights['微服务与分布式'] > 1)
+})
