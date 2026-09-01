@@ -5,6 +5,7 @@ import { QuestionDetail } from './components/QuestionDetail'
 import { RandomQuiz } from './components/RandomQuiz'
 import { SearchModal } from './components/SearchModal'
 import { FloatingMenu } from './components/FloatingMenu'
+import { InterviewStudio } from './components/InterviewStudio'
 import { useTheme } from './hooks/useTheme'
 
 function Home() {
@@ -23,20 +24,25 @@ function Detail() {
   )
 }
 
+function Interview() {
+  return <InterviewStudio />
+}
+
 export default function App() {
   useTheme()
   const navigate = useNavigate()
   const location = useLocation()
 
   const isRandomQuiz = location.pathname === '/random-quiz'
-  const isDetail = location.pathname.startsWith('/question/') || isRandomQuiz
+  const isInterview = location.pathname === '/ai-interview'
+  const isDetail = location.pathname.startsWith('/question/') || isRandomQuiz || isInterview
   const categoryMatch = location.pathname.match(/\/question\/([^/]+)/)
   const currentCategory = categoryMatch ? decodeURIComponent(categoryMatch[1]) : null
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-canvas-dark">
       <Header
-        title={isRandomQuiz ? '随机面试题' : isDetail ? currentCategory || '题目详情' : 'Java面试宝典'}
+        title={isInterview ? 'AI 模拟面试' : isRandomQuiz ? '随机面试题' : isDetail ? currentCategory || '题目详情' : 'Java面试宝典'}
         showBack={isDetail}
         onBack={() => navigate(-1)}
       />
@@ -44,6 +50,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/question/:categoryId/:questionId" element={<Detail />} />
         <Route path="/random-quiz" element={<RandomQuiz />} />
+        <Route path="/ai-interview" element={<Interview />} />
       </Routes>
       <SearchModal />
       {location.pathname === '/' && <FloatingMenu />}

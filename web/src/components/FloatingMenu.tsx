@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Shuffle, Search, Sun, Moon } from 'lucide-react'
+import { Menu, X, Shuffle, Search, Sun, Moon, Bot } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useTheme } from '../hooks/useTheme'
 
@@ -13,6 +13,11 @@ export function FloatingMenu() {
   const close = () => setOpen(false)
 
   const items = [
+    {
+      icon: Bot,
+      label: 'AI 模拟面试',
+      onClick: () => { navigate('/ai-interview'); close() },
+    },
     {
       icon: Shuffle,
       label: '随机面试题',
