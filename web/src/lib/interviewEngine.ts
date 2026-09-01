@@ -168,6 +168,10 @@ const skillRules = [
   { name: '系统设计', terms: ['架构', '设计', '支付', '订单', '系统设计'], categories: ['架构设计', '场景题', '项目难点&亮点'] },
 ]
 
+export function getInterviewIntegrityGuidance(): string {
+  return '请如实描述真实经历，不虚构项目、职责、数据或结果。暂时没有相关经验时，可以说明已知边界、学习计划和准备补齐的能力；反馈会帮助你补齐能力与表达。'
+}
+
 export function getCompanyInterviewFocus(company: CompanyProfile): string[] {
   const text = `${company.industry} ${company.culture}`.toLowerCase()
   const focus: string[] = []

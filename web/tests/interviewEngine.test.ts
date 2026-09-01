@@ -8,6 +8,7 @@ import {
     createLearningPlan,
     createMemory,
     getInterviewTrend,
+    getInterviewIntegrityGuidance,
     getHrQuestions,
     upsertCompanyProfile,
     shouldFinishInterview,
@@ -121,6 +122,14 @@ test('agent flags sensitive personal information in an answer', () => {
     assert.ok(output.assessment.safetyFlags.includes('手机号'))
     assert.ok(output.assessment.safetyFlags.includes('邮箱'))
     assert.equal(output.memoryCandidates.length, 0)
+})
+
+test('interview integrity guidance prohibits fabricated project experience', () => {
+    const guidance = getInterviewIntegrityGuidance()
+
+    assert.ok(guidance.includes('不虚构'))
+    assert.ok(guidance.includes('真实'))
+    assert.ok(guidance.includes('补齐'))
 })
 
 test('interview can finish after core skills are covered', () => {
