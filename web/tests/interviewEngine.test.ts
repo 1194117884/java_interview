@@ -6,6 +6,7 @@ import {
     createAgentTurnOutput,
     createInterviewReport,
     createLearningPlan,
+    getInterviewTrend,
     searchQuestions,
 } from '../src/lib/interviewEngine'
 
@@ -77,4 +78,14 @@ test('learning plan prioritizes weak skills before developing skills', () => {
     assert.equal(plan[0].skill, 'Java 并发')
     assert.ok(plan[0].action.includes('原理'))
     assert.equal(plan[1].skill, 'Redis')
+})
+
+test('interview trend identifies score improvement across reports', () => {
+    const trend = getInterviewTrend([
+        { report: { overallScore: 68 } },
+        { report: { overallScore: 45 } },
+    ])
+
+    assert.equal(trend.direction, 'improving')
+    assert.equal(trend.change, 23)
 })

@@ -125,6 +125,11 @@ export interface InterviewSessionRecord {
   report: InterviewReport
 }
 
+export interface InterviewTrend {
+  change: number
+  direction: 'improving' | 'declining' | 'steady' | 'insufficient'
+}
+
 export interface InterviewDraft {
   company: CompanyProfile
   job: JobProfile | null
@@ -444,6 +449,17 @@ export function createLearningPlan(memories: SkillMemory[]): LearningPlanItem[] 
         : '补充职责、方案取舍和可量化结果，形成可验证的项目案例。',
       evidence: memory.evidence,
     }))
+}
+
+export function getInterviewTrend(sessions: Array<{ report: { overallScore: number } }>): InterviewTrend {
+  if (sessions.length < 2) return { change: 0, direction: 'insufficient' }
+  const latest = sessions[0].report.overallScore
+  const previous = sessions[1].report.overallScore
+  const change = latest - previous
+  return {
+    change,
+    direction: change >= 5 ? 'improving' : change <= -5 ? 'declining' : 'steady',
+  }
 }
 
 export function saveMemories(memories: SkillMemory[]) {
