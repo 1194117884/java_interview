@@ -77,3 +77,20 @@ test('agent turn endpoint returns validated structure and persists the turn', as
     assert.equal(sessionRecords[0].trace.decision, 'next_question')
     await new Promise(resolve => app.close(resolve))
 })
+
+test('agent stream endpoint emits resumable answer chunks', async () => {
+    const app = createApp()
+    await new Promise(resolve => app.listen(0, '127.0.0.1', resolve))
+    const address = app.address()
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/agent/stream`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer user-a', 'content-type': 'application/json' },
+        body: JSON.stringify({ sessionId: 'session-stream', prompt: '请给出下一题' }),
+    })
+    assert.equal(response.status, 200)
+    assert.match(response.headers.get('content-type'), /text\/event-stream/)
+    const text = await response.text()
+    assert.match(text, /event: chunk/)
+    assert.match(text, /event: done/)
+    await new Promise(resolve => app.close(resolve))
+})

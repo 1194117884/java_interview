@@ -51,6 +51,28 @@ export function createApp() {
             }
             return
         }
+        if (request.method === 'POST' && url.pathname === '/api/agent/stream') {
+            const authorization = request.headers.authorization || ''
+            const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
+            if (!token) {
+                sendJson(response, 401, { error: 'unauthorized' })
+                return
+            }
+            let body = ''
+            for await (const chunk of request) body += chunk
+            try {
+                const input = JSON.parse(body)
+                if (!input.sessionId || !input.prompt?.trim()) throw new Error('invalid')
+                response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache', connection: 'keep-alive' })
+                const chunks = ['已加载当前会话上下文。', '正在结合题库生成下一题。']
+                chunks.forEach(chunk => response.write(`event: chunk\ndata: ${JSON.stringify({ text: chunk, sessionId: input.sessionId })}\n\n`))
+                response.write(`event: done\ndata: ${JSON.stringify({ sessionId: input.sessionId, resumeToken: `${token}:${input.sessionId}` })}\n\n`)
+                response.end()
+            } catch {
+                sendJson(response, 400, { error: 'invalid_stream_request' })
+            }
+            return
+        }
         const crudMatch = url.pathname.match(/^\/api\/crud\/([^/]+)(?:\/([^/]+))?$/)
         if (crudMatch && crudResources.has(crudMatch[1])) {
             const authorization = request.headers.authorization || ''
