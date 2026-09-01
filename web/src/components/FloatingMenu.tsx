@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Shuffle, Search, Sun, Moon, Bot } from 'lucide-react'
+import { Menu, X, Shuffle, Search, Sun, Moon, Bot, ShieldAlert, BarChart3 } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useTheme } from '../hooks/useTheme'
 
@@ -17,6 +17,16 @@ export function FloatingMenu() {
       icon: Bot,
       label: 'AI 模拟面试',
       onClick: () => { navigate('/ai-interview'); close() },
+    },
+    {
+      icon: ShieldAlert,
+      label: '能力画像',
+      onClick: () => { navigate('/skill-memory'); close() },
+    },
+    {
+      icon: BarChart3,
+      label: '历史报告',
+      onClick: () => { navigate('/interview-history'); close() },
     },
     {
       icon: Shuffle,

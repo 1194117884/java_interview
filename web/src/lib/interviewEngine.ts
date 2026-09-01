@@ -18,12 +18,42 @@ export interface JobProfile {
   priorities: string[]
 }
 
+export interface SavedInterviewProfile {
+  id: string
+  company: CompanyProfile
+  job: JobProfile
+  updatedAt: string
+}
+
 export interface InterviewQuestion {
   id: string
   categoryId: string
   title: string
   category: string
   focus: string
+  difficulty?: '基础' | '进阶' | '冲刺'
+  scenarioTags?: string[]
+  followUpHints?: string[]
+}
+
+export interface QuestionMetadata {
+  skills: string[]
+  difficulty: '基础' | '进阶' | '冲刺'
+  experience: string
+  scenarioTags: string[]
+  followUpHints: string[]
+}
+
+export interface QuestionSearchFilters {
+  skills?: string[]
+  difficulty?: '基础' | '进阶' | '冲刺'
+  categories?: string[]
+}
+
+export interface QuestionDetailResult extends InterviewQuestion {
+  content: string
+  metadata: QuestionMetadata
+  relatedQuestions: InterviewQuestion[]
 }
 
 export interface SkillMemory {
@@ -32,6 +62,70 @@ export interface SkillMemory {
   level: 'weak' | 'developing' | 'strong'
   evidence: string
   confidence: number
+  updatedAt: string
+}
+
+export interface AnswerAssessment {
+  score: number
+  level: SkillMemory['level']
+  assessment: string
+  skill: string
+}
+
+export interface InterviewDecision {
+  nextAction: 'follow_up' | 'next_question' | 'finish'
+  question?: InterviewQuestion
+  reason: string
+}
+
+export interface AgentTurnOutput {
+  nextAction: InterviewDecision['nextAction']
+  question?: InterviewQuestion
+  assessment: AnswerAssessment
+  scoreDelta: number
+  memoryCandidates: SkillMemory[]
+  reason: string
+  isCoreSkill: boolean
+}
+
+export interface InterviewReport {
+  overallScore: number
+  dimensions: Array<{ label: string; score: number; note: string }>
+  risks: string[]
+  recommendation: string
+}
+
+export interface InterviewTurnRecord {
+  question: InterviewQuestion
+  answer: string
+  score: number
+  assessment: string
+  decision: string
+}
+
+export interface InterviewSessionRecord {
+  id: string
+  completedAt: string
+  companyName: string
+  jobTitle: string
+  mode: InterviewMode
+  duration: string
+  difficulty: string
+  goal: string
+  turns: InterviewTurnRecord[]
+  report: InterviewReport
+}
+
+export interface InterviewDraft {
+  company: CompanyProfile
+  job: JobProfile | null
+  mode: InterviewMode
+  duration: '15' | '30' | '45'
+  difficulty: '基础' | '进阶' | '冲刺'
+  goal: '摸底' | '冲刺'
+  questions: InterviewQuestion[]
+  turn: number
+  turns: InterviewTurnRecord[]
   updatedAt: string
 }
 
@@ -46,6 +140,88 @@ const skillRules = [
   { name: 'Spring', terms: ['spring', 'spring boot', 'ioc', 'aop'], categories: ['Spring'] },
   { name: '系统设计', terms: ['架构', '设计', '支付', '订单', '系统设计'], categories: ['架构设计', '场景题', '项目难点&亮点'] },
 ]
+
+const categoryMetadata: Record<string, Omit<QuestionMetadata, 'difficulty'>> = {
+  Java并发: { skills: ['Java 并发'], experience: '1-5 年', scenarioTags: ['线程安全', '性能'], followUpHints: ['锁竞争时如何排查？', '如何验证线程安全？'] },
+  JVM: { skills: ['JVM'], experience: '1-5 年', scenarioTags: ['性能', '线上排障'], followUpHints: ['如何定位线上问题？', '方案的代价是什么？'] },
+  MySQL: { skills: ['MySQL'], experience: '1-5 年', scenarioTags: ['数据库', '性能'], followUpHints: ['索引为何会失效？', '如何验证执行计划？'] },
+  Redis: { skills: ['Redis'], experience: '1-5 年', scenarioTags: ['缓存', '高可用'], followUpHints: ['缓存异常如何兜底？', '如何避免数据不一致？'] },
+  Kafka: { skills: ['消息队列'], experience: '2-5 年', scenarioTags: ['异步', '可靠性'], followUpHints: ['如何保证消息不丢？', '重复消费如何处理？'] },
+  RocketMQ: { skills: ['消息队列'], experience: '2-5 年', scenarioTags: ['异步', '可靠性'], followUpHints: ['如何保证消息不丢？', '重复消费如何处理？'] },
+  RabbitMQ: { skills: ['消息队列'], experience: '2-5 年', scenarioTags: ['异步', '可靠性'], followUpHints: ['如何保证消息不丢？', '重复消费如何处理？'] },
+  微服务: { skills: ['微服务与分布式'], experience: '2-5 年', scenarioTags: ['分布式', '一致性'], followUpHints: ['失败后如何补偿？', '如何设计幂等？'] },
+  分布式: { skills: ['微服务与分布式'], experience: '2-5 年', scenarioTags: ['分布式', '一致性'], followUpHints: ['失败后如何补偿？', '如何设计幂等？'] },
+  高并发: { skills: ['高并发与稳定性'], experience: '3-5 年', scenarioTags: ['容量', '稳定性'], followUpHints: ['容量如何估算？', '故障时如何降级？'] },
+  高可用: { skills: ['高并发与稳定性'], experience: '3-5 年', scenarioTags: ['稳定性', '故障演练'], followUpHints: ['如何发现故障？', '如何演练恢复？'] },
+  Spring: { skills: ['Spring'], experience: '1-5 年', scenarioTags: ['框架原理'], followUpHints: ['底层机制是什么？', '在项目中如何使用？'] },
+  架构设计: { skills: ['系统设计'], experience: '3-5 年', scenarioTags: ['系统设计', '业务'], followUpHints: ['方案取舍是什么？', '极端流量如何处理？'] },
+  场景题: { skills: ['系统设计'], experience: '3-5 年', scenarioTags: ['系统设计', '业务'], followUpHints: ['方案取舍是什么？', '极端流量如何处理？'] },
+}
+
+function inferDifficulty(title: string): QuestionMetadata['difficulty'] {
+  if (/源码|实现|原理|底层|设计|优化|排查|分布式|一致性|高并发|架构/.test(title)) return '冲刺'
+  if (/区别|如何|为什么|流程|机制|事务|索引|线程池/.test(title)) return '进阶'
+  return '基础'
+}
+
+export function getQuestionMetadata(categoryId: string, title: string): QuestionMetadata {
+  const base = categoryMetadata[categoryId] || { skills: ['Java 基础'], experience: '0-3 年', scenarioTags: ['基础'], followUpHints: ['请举一个实际使用的例子。'] }
+  return { ...base, difficulty: inferDifficulty(title) }
+}
+
+export function searchQuestions(query = '', filters: QuestionSearchFilters = {}): InterviewQuestion[] {
+  const normalized = query.trim().toLowerCase()
+  const requestedSkills = filters.skills || []
+  const candidates = searchIndex as Array<{ id: string; title: string; category: string; categoryId: string }>
+  return candidates.map(item => {
+    const metadata = getQuestionMetadata(item.categoryId, item.title)
+    return { ...item, focus: item.category, difficulty: metadata.difficulty, scenarioTags: metadata.scenarioTags, followUpHints: metadata.followUpHints }
+  }).filter(item => {
+    const metadata = getQuestionMetadata(item.categoryId, item.title)
+    const matchesQuery = !normalized || `${item.title} ${item.category} ${metadata.skills.join(' ')}`.toLowerCase().includes(normalized)
+    const matchesSkills = !requestedSkills.length || requestedSkills.some(skill => metadata.skills.includes(skill))
+    const matchesDifficulty = !filters.difficulty || item.difficulty === filters.difficulty
+    const matchesCategories = !filters.categories?.length || filters.categories.includes(item.categoryId)
+    return matchesQuery && matchesSkills && matchesDifficulty && matchesCategories
+  })
+}
+
+export async function getQuestionDetail(id: string): Promise<QuestionDetailResult | null> {
+  const indexItem = (searchIndex as Array<{ id: string; title: string; category: string; categoryId: string }>).find(item => item.id === id)
+  if (!indexItem) return null
+  try {
+    const response = await fetch(`/data/content/${encodeURIComponent(indexItem.categoryId)}.json`)
+    if (!response.ok) return null
+    const categoryData = await response.json() as { questions: Array<{ id: string; title: string; content: string }> }
+    const source = categoryData.questions.find(item => item.id === id)
+    if (!source) return null
+    const metadata = getQuestionMetadata(indexItem.categoryId, source.title)
+    const relatedQuestions = searchQuestions('', { skills: metadata.skills })
+      .filter(item => item.id !== id)
+      .slice(0, 3)
+    return {
+      ...indexItem,
+      focus: indexItem.category,
+      difficulty: metadata.difficulty,
+      scenarioTags: metadata.scenarioTags,
+      followUpHints: metadata.followUpHints,
+      content: source.content,
+      metadata,
+      relatedQuestions,
+    }
+  } catch {
+    return null
+  }
+}
+
+export function getFollowUps(question: InterviewQuestion, assessment: AnswerAssessment): string[] {
+  const defaults = assessment.level === 'weak'
+    ? ['请先说明核心概念，再给出一个实际使用场景。']
+    : assessment.level === 'developing'
+      ? ['请补充你的职责、方案取舍和量化结果。']
+      : ['请说明异常边界、容量上限与验证方式。']
+  return question.followUpHints?.length ? question.followUpHints : defaults
+}
 
 const hrQuestions = [
   '请用 3 分钟介绍最近一个项目：业务目标、你的职责、技术方案和结果分别是什么？',
@@ -75,21 +251,16 @@ export function analyzeJobDescription(title: string, description: string): JobPr
   }
 }
 
-export function getTechnicalQuestions(job: JobProfile): InterviewQuestion[] {
+export function getTechnicalQuestions(job: JobProfile, difficulty: QuestionMetadata['difficulty'] = '进阶'): InterviewQuestion[] {
   const targetCategories = skillRules
     .filter(rule => job.skills.includes(rule.name))
     .flatMap(rule => rule.categories)
-  const candidates = (searchIndex as Array<{ id: string; title: string; category: string; categoryId: string }>)
-    .filter(item => targetCategories.includes(item.categoryId))
-    .slice(0, 12)
-    .map(item => ({ ...item, focus: item.category }))
-
-  const fallback = (searchIndex as Array<{ id: string; title: string; category: string; categoryId: string }>)
-    .filter(item => ['Java基础', 'Java并发', 'JVM', 'MySQL', 'Redis'].includes(item.categoryId))
-    .slice(0, 8)
-    .map(item => ({ ...item, focus: item.category }))
-
-  return candidates.length ? candidates : fallback
+  const exactCandidates = searchQuestions('', { categories: targetCategories, difficulty })
+  const candidates = exactCandidates.length
+    ? exactCandidates
+    : searchQuestions('', { categories: targetCategories })
+  const fallback = searchQuestions('', { categories: ['Java基础', 'Java并发', 'JVM', 'MySQL', 'Redis'], difficulty })
+  return (candidates.length ? candidates : fallback).slice(0, 12)
 }
 
 export function getHrQuestions(): InterviewQuestion[] {
@@ -102,7 +273,7 @@ export function getHrQuestions(): InterviewQuestion[] {
   }))
 }
 
-export function assessAnswer(answer: string, question: InterviewQuestion) {
+export function assessAnswer(answer: string, question: InterviewQuestion): AnswerAssessment {
   const normalized = answer.trim().toLowerCase()
   const givesUp = ['不知道', '不清楚', '没做过', '不了解'].some(word => normalized.includes(word))
   const evidenceTerms = ['例如', '因为', '所以', '数据', 'qps', 'ms', '方案', '最终', '结果', '负责', '我们']
@@ -125,6 +296,94 @@ export function assessAnswer(answer: string, question: InterviewQuestion) {
   return { score, level, assessment, skill: question.focus }
 }
 
+export function getFollowUp(question: InterviewQuestion, assessment: AnswerAssessment, depth: number, maxFollowUps = 2): InterviewDecision {
+  if (assessment.level === 'strong' && depth < maxFollowUps) {
+    return {
+      nextAction: 'follow_up',
+      question: {
+        ...question,
+        id: `${question.id}-follow-up-${depth}`,
+        title: getFollowUps(question, assessment)[0],
+        focus: `${question.focus} · 深挖`,
+      },
+      reason: '回答证据充分，继续验证方案边界和技术取舍。',
+    }
+  }
+
+  if (assessment.level === 'developing' && depth === 0 && maxFollowUps > 0) {
+    return {
+      nextAction: 'follow_up',
+      question: {
+        ...question,
+        id: `${question.id}-clarify`,
+        title: getFollowUps(question, assessment)[0],
+        focus: `${question.focus} · 补充证据`,
+      },
+      reason: '回答方向正确，补充可验证的项目证据后再继续。',
+    }
+  }
+
+  return {
+    nextAction: 'next_question',
+    reason: assessment.level === 'weak'
+      ? '已记录待补强点，切换到下一项能力，避免在同一薄弱点反复消耗时间。'
+      : '本题已完成，继续覆盖岗位的其他重点能力。',
+  }
+}
+
+export function createAgentTurnOutput(
+  question: InterviewQuestion,
+  answer: string,
+  job: JobProfile | null,
+  depth: number,
+): AgentTurnOutput {
+  const assessment = assessAnswer(answer, question)
+  const metadata = getQuestionMetadata(question.categoryId, question.title)
+  const isCoreSkill = Boolean(job?.skills.some(skill => metadata.skills.includes(skill)))
+  const decision = getFollowUp(question, assessment, depth, isCoreSkill ? 2 : 1)
+  const memory = createMemory(question, answer)
+  return {
+    nextAction: decision.nextAction,
+    question: decision.question,
+    assessment,
+    scoreDelta: assessment.score - 2,
+    memoryCandidates: memory ? [memory] : [],
+    reason: decision.reason,
+    isCoreSkill,
+  }
+}
+
+export function createInterviewReport(
+  turns: Array<{ answer: string; score: number }>,
+  mode: InterviewMode,
+  job: JobProfile | null,
+): InterviewReport {
+  const average = turns.length ? Math.round(turns.reduce((total, item) => total + item.score, 0) / (turns.length * 4) * 100) : 0
+  const answers = turns.map(item => item.answer.toLowerCase())
+  const projectEvidence = answers.filter(answer => /负责|项目|数据|qps|ms|结果|最终/.test(answer)).length
+  const structuredAnswers = answers.filter(answer => /背景|方案|取舍|结果|因为|所以/.test(answer)).length
+  const risks: string[] = []
+  if (turns.length < 2) risks.push('有效回答较少，当前结论置信度有限。')
+  if (projectEvidence < Math.max(1, Math.ceil(turns.length / 2))) risks.push('项目职责或量化结果不足，建议准备可核验的案例。')
+  if (answers.some(answer => /不知道|不清楚|没做过|不了解/.test(answer))) risks.push('出现明确的知识缺口，建议优先复习对应题目。')
+
+  const technicalScore = mode === 'technical' ? average : Math.max(average - 8, 0)
+  const projectScore = Math.min(100, projectEvidence * 28 + 20)
+  const expressionScore = Math.min(100, structuredAnswers * 25 + 20)
+  const fitScore = Math.min(100, Math.round((average + (job?.skills.length || 1) * 9) / 1.4))
+  return {
+    overallScore: average,
+    dimensions: [
+      { label: '技术深度', score: technicalScore, note: technicalScore >= 70 ? '能够继续接受边界与取舍追问。' : '建议补齐原理与故障场景。' },
+      { label: '项目真实性', score: projectScore, note: projectEvidence ? '已出现项目证据。' : '缺少职责、数据或结果证据。' },
+      { label: '表达结构', score: expressionScore, note: structuredAnswers ? '回答包含部分结构化叙述。' : '建议按背景、方案、取舍、结果组织回答。' },
+      { label: '岗位匹配度', score: fitScore, note: `本轮覆盖 ${job?.skills.slice(0, 3).join('、') || '基础能力'} 等重点。` },
+    ],
+    risks,
+    recommendation: risks.length ? '下一轮优先用一个真实项目案例补足证据，再进行技术深挖。' : '下一轮可提高难度，练习极端场景和方案取舍。',
+  }
+}
+
 export function createMemory(question: InterviewQuestion, answer: string): SkillMemory | null {
   const result = assessAnswer(answer, question)
   if (result.level === 'strong') return null
@@ -138,4 +397,60 @@ export function createMemory(question: InterviewQuestion, answer: string): Skill
     confidence: result.level === 'weak' ? 0.82 : 0.62,
     updatedAt: new Date().toLocaleDateString('zh-CN'),
   }
+}
+
+export function saveMemories(memories: SkillMemory[]) {
+  localStorage.setItem('java-interview-ai-memory', JSON.stringify(memories))
+}
+
+export function loadMemories(): SkillMemory[] {
+  try {
+    const value = JSON.parse(localStorage.getItem('java-interview-ai-memory') || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function loadInterviewProfiles(): SavedInterviewProfile[] {
+  try {
+    const value = JSON.parse(localStorage.getItem('java-interview-profiles') || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function saveInterviewProfiles(profiles: SavedInterviewProfile[]) {
+  localStorage.setItem('java-interview-profiles', JSON.stringify(profiles))
+}
+
+export function loadInterviewSessions(): InterviewSessionRecord[] {
+  try {
+    const value = JSON.parse(localStorage.getItem('java-interview-sessions') || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function saveInterviewSessions(sessions: InterviewSessionRecord[]) {
+  localStorage.setItem('java-interview-sessions', JSON.stringify(sessions))
+}
+
+export function loadInterviewDraft(): InterviewDraft | null {
+  try {
+    const value = JSON.parse(localStorage.getItem('java-interview-draft') || 'null')
+    return value && Array.isArray(value.questions) && Array.isArray(value.turns) ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function saveInterviewDraft(draft: InterviewDraft) {
+  localStorage.setItem('java-interview-draft', JSON.stringify(draft))
+}
+
+export function clearInterviewDraft() {
+  localStorage.removeItem('java-interview-draft')
 }
