@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { getModelConfig } from './config.mjs'
 
 function sendJson(response, statusCode, body) {
     response.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' })
@@ -37,7 +38,13 @@ export function createApp() {
                 }
                 const sessionsKey = `${token}:sessions`
                 const sessions = recordsByUser.get(sessionsKey) || []
-                recordsByUser.set(sessionsKey, [...sessions, { id: input.sessionId, question: input.question, answer: input.answer, output }])
+                recordsByUser.set(sessionsKey, [...sessions, {
+                    id: input.sessionId,
+                    question: input.question,
+                    answer: input.answer,
+                    output,
+                    trace: { model: getModelConfig().model, tools: ['session-context', 'question-bank'], decision: output.nextAction },
+                }])
                 sendJson(response, 200, output)
             } catch {
                 sendJson(response, 400, { error: 'invalid_turn' })
