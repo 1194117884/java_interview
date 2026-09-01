@@ -15,6 +15,35 @@ export function createApp() {
             sendJson(response, 200, { service: 'java-interview-api', status: 'ok' })
             return
         }
+        if (request.method === 'POST' && url.pathname === '/api/agent/turn') {
+            const authorization = request.headers.authorization || ''
+            const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
+            if (!token) {
+                sendJson(response, 401, { error: 'unauthorized' })
+                return
+            }
+            let body = ''
+            for await (const chunk of request) body += chunk
+            try {
+                const input = JSON.parse(body)
+                if (!input.sessionId || !input.question || !input.answer?.trim()) throw new Error('invalid')
+                const score = input.answer.trim().length >= 50 ? 3 : input.answer.trim().length >= 20 ? 2 : 1
+                const output = {
+                    nextAction: score <= 1 ? 'next_question' : 'follow_up',
+                    question: score > 1 ? `请补充“${input.question}”的验证方式和边界。` : undefined,
+                    assessment: { score, level: score >= 3 ? 'strong' : score === 2 ? 'developing' : 'weak', assessment: score >= 2 ? '回答包含可继续验证的内容。' : '回答证据不足，建议补充具体场景。' },
+                    scoreDelta: score - 2,
+                    memoryCandidates: score < 3 ? [{ skill: input.question, level: score === 1 ? 'weak' : 'developing' }] : [],
+                }
+                const sessionsKey = `${token}:sessions`
+                const sessions = recordsByUser.get(sessionsKey) || []
+                recordsByUser.set(sessionsKey, [...sessions, { id: input.sessionId, question: input.question, answer: input.answer, output }])
+                sendJson(response, 200, output)
+            } catch {
+                sendJson(response, 400, { error: 'invalid_turn' })
+            }
+            return
+        }
         const crudMatch = url.pathname.match(/^\/api\/crud\/([^/]+)(?:\/([^/]+))?$/)
         if (crudMatch && crudResources.has(crudMatch[1])) {
             const authorization = request.headers.authorization || ''

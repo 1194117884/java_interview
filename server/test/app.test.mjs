@@ -52,3 +52,24 @@ test('CRUD resources support create, read, update and delete per user', async ()
     assert.equal(deleted.status, 204)
     await new Promise(resolve => app.close(resolve))
 })
+
+test('agent turn endpoint returns validated structure and persists the turn', async () => {
+    const app = createApp()
+    await new Promise(resolve => app.listen(0, '127.0.0.1', resolve))
+    const address = app.address()
+    const base = `http://127.0.0.1:${address.port}`
+    const response = await fetch(`${base}/api/agent/turn`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer user-a', 'content-type': 'application/json' },
+        body: JSON.stringify({ sessionId: 'session-1', question: '如何保证幂等？', answer: '通过业务幂等键和唯一索引避免重复处理。' }),
+    })
+    assert.equal(response.status, 200)
+    const output = await response.json()
+    assert.equal(output.nextAction, 'next_question')
+    assert.equal(typeof output.assessment.score, 'number')
+    assert.equal(typeof output.scoreDelta, 'number')
+    assert.ok(Array.isArray(output.memoryCandidates))
+    const sessions = await fetch(`${base}/api/crud/sessions`, { headers: { authorization: 'Bearer user-a' } })
+    assert.equal((await sessions.json()).length, 1)
+    await new Promise(resolve => app.close(resolve))
+})
