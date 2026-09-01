@@ -74,6 +74,7 @@ export interface SkillMemory {
   evidence: string
   confidence: number
   updatedAt: string
+  sourceSessionId?: string
 }
 
 export interface LearningPlanItem {
@@ -152,6 +153,7 @@ export interface InterviewDraft {
   turn: number
   turns: InterviewTurnRecord[]
   updatedAt: string
+  sessionId?: string
 }
 
 const skillRules = [
@@ -397,12 +399,13 @@ export function createAgentTurnOutput(
   answer: string,
   job: JobProfile | null,
   depth: number,
+  sourceSessionId?: string,
 ): AgentTurnOutput {
   const assessment = assessAnswer(answer, question)
   const metadata = getQuestionMetadata(question.categoryId, question.title)
   const isCoreSkill = Boolean(job?.skills.some(skill => metadata.skills.includes(skill)))
   const decision = getFollowUp(question, assessment, depth, isCoreSkill ? 2 : 1)
-  const memory = createMemory(question, answer)
+  const memory = createMemory(question, answer, sourceSessionId)
   return {
     nextAction: decision.nextAction,
     question: decision.question,
@@ -471,7 +474,7 @@ export function createInterviewReport(
   }
 }
 
-export function createMemory(question: InterviewQuestion, answer: string): SkillMemory | null {
+export function createMemory(question: InterviewQuestion, answer: string, sourceSessionId?: string): SkillMemory | null {
   const result = assessAnswer(answer, question)
   if (result.safetyFlags.length) return null
   if (result.level === 'strong') return null
@@ -484,6 +487,7 @@ export function createMemory(question: InterviewQuestion, answer: string): Skill
       : `在“${question.title}”中，具备基础认知，但原理或项目数据仍不完整。`,
     confidence: result.level === 'weak' ? 0.82 : 0.62,
     updatedAt: new Date().toLocaleDateString('zh-CN'),
+    sourceSessionId,
   }
 }
 

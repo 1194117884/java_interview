@@ -6,6 +6,7 @@ import {
     createAgentTurnOutput,
     createInterviewReport,
     createLearningPlan,
+    createMemory,
     getInterviewTrend,
     upsertCompanyProfile,
     shouldFinishInterview,
@@ -152,4 +153,11 @@ test('JD analysis extracts responsibilities, requirements and weighted skills', 
     assert.ok(job.businessKeywords.includes('支付'))
     assert.ok(job.scoringWeights['高并发与稳定性'] > 1)
     assert.ok(job.scoringWeights['微服务与分布式'] > 1)
+})
+
+test('skill memory retains its source interview session', () => {
+    const question = searchQuestions('', { categories: ['Java并发'] })[0]
+    const memory = createMemory(question, '不知道。', 'session-42')
+
+    assert.equal(memory?.sourceSessionId, 'session-42')
 })

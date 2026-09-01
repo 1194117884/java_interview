@@ -20,6 +20,7 @@ export function InterviewStudio() {
     const [priorityInput, setPriorityInput] = useState('')
     const [savedProfiles, setSavedProfiles] = useState<SavedInterviewProfile[]>(loadInterviewProfiles)
     const [draft, setDraft] = useState(loadInterviewDraft)
+    const [sessionId, setSessionId] = useState('')
     const [mode, setMode] = useState<InterviewMode>('technical')
     const [duration, setDuration] = useState<'15' | '30' | '45'>('30')
     const [difficulty, setDifficulty] = useState<'基础' | '进阶' | '冲刺'>('进阶')
@@ -70,10 +71,11 @@ export function InterviewStudio() {
     const start = () => {
         const profile = resolvedJob()
         const queue = mode === 'technical' ? getTechnicalQuestions(profile, difficulty) : getHrQuestions()
+        const nextSessionId = `${Date.now()}`
         setJob(profile)
         setQuestions(queue)
-        setTurn(0); setTurns([]); setAnswer(''); setStep('interview')
-        const nextDraft = { company, job: profile, mode, duration, difficulty, goal, questions: queue, turn: 0, turns: [], updatedAt: new Date().toLocaleString('zh-CN') }
+        setTurn(0); setTurns([]); setAnswer(''); setSessionId(nextSessionId); setStep('interview')
+        const nextDraft = { company, job: profile, mode, duration, difficulty, goal, questions: queue, turn: 0, turns: [], updatedAt: new Date().toLocaleString('zh-CN'), sessionId: nextSessionId }
         saveInterviewDraft(nextDraft); setDraft(nextDraft)
     }
     const remember = (memory: SkillMemory | null) => {
@@ -84,7 +86,7 @@ export function InterviewStudio() {
     const complete = (completedTurns: Turn[]) => {
         const completedReport = createInterviewReport(completedTurns, mode, job, company)
         const record = {
-            id: `${Date.now()}`,
+            id: sessionId || `${Date.now()}`,
             completedAt: new Date().toLocaleString('zh-CN'),
             companyName: company.name || '未命名公司',
             jobTitle: job?.title || jobTitle,
@@ -102,19 +104,19 @@ export function InterviewStudio() {
     const submit = () => {
         if (!currentQuestion || !answer.trim()) return
         const depth = currentQuestion.id.includes('follow-up') || currentQuestion.id.includes('clarify') ? 1 : 0
-        const agentOutput = createAgentTurnOutput(currentQuestion, answer, job, depth)
+        const agentOutput = createAgentTurnOutput(currentQuestion, answer, job, depth, sessionId)
         const completed = [...turns, { question: currentQuestion, answer, score: agentOutput.assessment.score, assessment: agentOutput.assessment.assessment, decision: agentOutput.reason }]
         agentOutput.memoryCandidates.forEach(remember); setTurns(completed); setAnswer('')
         if (agentOutput.nextAction === 'follow_up' && agentOutput.question && completed.length < maxQuestions) {
             const queue = [...questions.slice(0, turn + 1), agentOutput.question, ...questions.slice(turn + 1)]
             setQuestions(queue); setTurn(turn + 1)
-            const nextDraft = { company, job, mode, duration, difficulty, goal, questions: queue, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN') }
+            const nextDraft = { company, job, mode, duration, difficulty, goal, questions: queue, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN'), sessionId }
             saveInterviewDraft(nextDraft); setDraft(nextDraft)
         }
         else if (turn + 1 >= questions.length || shouldFinishInterview(completed, job, maxQuestions)) complete(completed)
         else {
             setTurn(turn + 1)
-            const nextDraft = { company, job, mode, duration, difficulty, goal, questions, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN') }
+            const nextDraft = { company, job, mode, duration, difficulty, goal, questions, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN'), sessionId }
             saveInterviewDraft(nextDraft); setDraft(nextDraft)
         }
     }
@@ -122,7 +124,7 @@ export function InterviewStudio() {
         if (!draft) return
         setCompany(draft.company); setJob(draft.job); setJobTitle(draft.job?.title || 'Java 后端工程师'); setJd(draft.job?.description || '')
         setMode(draft.mode); setDuration(draft.duration); setDifficulty(draft.difficulty); setGoal(draft.goal)
-        setQuestions(draft.questions); setTurn(draft.turn); setTurns(draft.turns); setAnswer(''); setStep('interview')
+        setQuestions(draft.questions); setTurn(draft.turn); setTurns(draft.turns); setSessionId(draft.sessionId || `${Date.now()}`); setAnswer(''); setStep('interview')
     }
     const abandonDraft = () => { clearInterviewDraft(); setDraft(null) }
 
