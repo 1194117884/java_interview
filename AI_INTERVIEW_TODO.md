@@ -53,7 +53,7 @@
 
 ## 5. 后端与 AI 接入
 
-- [ ] 选择并初始化服务端（建议 TypeScript + Node API，与现有 `web/` 分离为 `server/`）。
+- [x] 选择并初始化服务端（建议 TypeScript + Node API，与现有 `web/` 分离为 `server/`）。
 - [ ] 配置数据库：开发环境 SQLite，生产环境 PostgreSQL；使用迁移管理表结构。
 - [ ] 实现公司、岗位、会话、报告、能力记忆的 CRUD API。
 - [ ] 实现 Agent 编排接口：加载上下文 → 调用题库工具 → 请求模型 → 校验结构化输出 → 持久化回合。
