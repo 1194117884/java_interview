@@ -22,3 +22,12 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
     completed_at TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS api_records (
+    id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, resource, id)
+);

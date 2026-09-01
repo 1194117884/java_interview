@@ -1,0 +1,9 @@
+name = "java-interview-api"
+main = "src/worker.mjs"
+compatibility_date = "2026-08-31"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "java-interview"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "db/migrations"

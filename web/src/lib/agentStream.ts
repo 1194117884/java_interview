@@ -11,7 +11,9 @@ export async function streamAgentPrompt(sessionId: string, prompt: string, optio
     while (attempts <= retries) {
         attempts += 1
         try {
-            const response = await fetch('/api/agent/stream', {
+            const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string> }).env
+            const apiBase = runtimeEnv?.VITE_API_BASE_URL || ''
+            const response = await fetch(`${apiBase}/api/agent/stream`, {
                 method: 'POST',
                 headers: { authorization: `Bearer ${options.token || 'local-user'}`, 'content-type': 'application/json' },
                 body: JSON.stringify({ sessionId, prompt }),
