@@ -32,3 +32,9 @@ No test framework or coverage threshold is configured. For data changes, run `np
 ## Commit & Pull Request Guidelines
 
 Use short, imperative commit subjects with a prefix, for example `feat: add random quiz` or `chore: update generated data`. Pull requests should explain the user-visible change, identify content or generated-data updates, include validation commands run, and attach screenshots for visual changes. Keep generated JSON synchronized with Markdown source changes.
+
+# Something important
+1. 无论做什么东西，必须Git init，纳入版本管理（不局限于代码）
+2. 无论改了什么必须Git提交，目的是打好快照，方便查看改动和回滚
+3. 无论要改什么，必须现些测试用例，以Test为质量验收，驱动开发任务
+4. 无论改了什么必须通过所有的“测试任务”，包括自己刚写的和已经写过的
