@@ -484,6 +484,10 @@ export function shouldFinishInterview(
   return coreSkills.length > 0 && coreSkills.every(skill => coveredSkills.has(skill))
 }
 
+export function getScoreLimitations(): string {
+  return '评分仅是辅助信号，不能作为唯一结论；请结合回答证据、风险项和多轮趋势综合判断。'
+}
+
 export function createInterviewReport(
   turns: Array<{ answer: string; score: number }>,
   mode: InterviewMode,
@@ -523,9 +527,9 @@ export function createInterviewReport(
     ],
     evidence,
     risks,
-    recommendation: risks.length
+    recommendation: `${risks.length
       ? `下一轮优先用一个真实项目案例补足证据，再进行技术深挖${companyFocus.length ? `，并关注 ${companyFocus[0]}` : ''}。`
-      : `下一轮可提高难度，练习极端场景和方案取舍${companyFocus.length ? `，重点围绕 ${companyFocus[0]}` : ''}。`,
+      : `下一轮可提高难度，练习极端场景和方案取舍${companyFocus.length ? `，重点围绕 ${companyFocus[0]}` : ''}。`} ${getScoreLimitations()}`,
   }
 }
 

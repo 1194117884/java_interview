@@ -13,6 +13,7 @@ import {
     getAgentSystemRules,
     getJdAnalysisStateMessage,
     getRoleInterviewPlan,
+    getScoreLimitations,
     getHrQuestions,
     upsertCompanyProfile,
     shouldFinishInterview,
@@ -178,6 +179,13 @@ test('role interview plan defines focus, question scope and follow-up depth', ()
     assert.ok(plan.questionCategories.includes('Redis'))
     assert.ok(plan.questionCategories.includes('Kafka'))
     assert.equal(plan.maxFollowUpDepth, 3)
+})
+
+test('score limitations keep evidence and risks alongside model scores', () => {
+    const note = getScoreLimitations()
+    assert.ok(note.includes('回答证据'))
+    assert.ok(note.includes('风险项'))
+    assert.ok(note.includes('唯一结论'))
 })
 
 test('interview can finish after core skills are covered', () => {
