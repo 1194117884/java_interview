@@ -388,6 +388,18 @@ export function createAgentTurnOutput(
   }
 }
 
+export function shouldFinishInterview(
+  turns: Array<{ question: InterviewQuestion }>,
+  job: JobProfile | null,
+  maxQuestions: number,
+): boolean {
+  if (turns.length >= maxQuestions) return true
+  if (!job || turns.length < 2) return false
+  const coreSkills = job.skills.slice(0, 3)
+  const coveredSkills = new Set(turns.flatMap(turn => getQuestionMetadata(turn.question.categoryId, turn.question.title).skills))
+  return coreSkills.length > 0 && coreSkills.every(skill => coveredSkills.has(skill))
+}
+
 export function createInterviewReport(
   turns: Array<{ answer: string; score: number }>,
   mode: InterviewMode,

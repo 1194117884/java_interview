@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { BarChart3, Bot, Bookmark, Building2, CheckCircle2, ChevronRight, ClipboardList, Lightbulb, MessageSquare, ShieldAlert, Sparkles, UserRound } from 'lucide-react'
-import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getHrQuestions, getTechnicalQuestions, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
+import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getHrQuestions, getTechnicalQuestions, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, shouldFinishInterview, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
 
 type Step = 'setup' | 'interview' | 'report'
 type Turn = InterviewTurnRecord
@@ -112,7 +112,7 @@ export function InterviewStudio() {
             const nextDraft = { company, job, mode, duration, difficulty, goal, questions: queue, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN') }
             saveInterviewDraft(nextDraft); setDraft(nextDraft)
         }
-        else if (turn + 1 >= questions.length || completed.length >= maxQuestions) complete(completed)
+        else if (turn + 1 >= questions.length || shouldFinishInterview(completed, job, maxQuestions)) complete(completed)
         else {
             setTurn(turn + 1)
             const nextDraft = { company, job, mode, duration, difficulty, goal, questions, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN') }

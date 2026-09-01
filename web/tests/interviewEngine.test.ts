@@ -7,6 +7,7 @@ import {
     createInterviewReport,
     createLearningPlan,
     getInterviewTrend,
+    shouldFinishInterview,
     searchQuestions,
 } from '../src/lib/interviewEngine'
 
@@ -117,4 +118,17 @@ test('agent flags sensitive personal information in an answer', () => {
     assert.ok(output.assessment.safetyFlags.includes('手机号'))
     assert.ok(output.assessment.safetyFlags.includes('邮箱'))
     assert.equal(output.memoryCandidates.length, 0)
+})
+
+test('interview can finish after core skills are covered', () => {
+    const job = analyzeJobDescription('Java 后端', '需要并发和 Redis 缓存经验')
+    const concurrencyQuestion = searchQuestions('', { categories: ['Java并发'] })[0]
+    const redisQuestion = searchQuestions('', { categories: ['Redis'] })[0]
+    const turns = [
+        { question: concurrencyQuestion, answer: '回答', score: 3, assessment: 'ok', decision: 'next' },
+        { question: redisQuestion, answer: '回答', score: 3, assessment: 'ok', decision: 'next' },
+    ]
+
+    assert.equal(shouldFinishInterview(turns, job, 5), true)
+    assert.equal(shouldFinishInterview(turns.slice(0, 1), job, 5), false)
 })
