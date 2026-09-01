@@ -9,6 +9,7 @@ import { InterviewStudio } from './components/InterviewStudio'
 import { SkillMemoryProfile } from './components/SkillMemoryProfile'
 import { InterviewHistory } from './components/InterviewHistory'
 import { CompanyProfiles } from './components/CompanyProfiles'
+import { JobProfiles } from './components/JobProfiles'
 import { useTheme } from './hooks/useTheme'
 
 function Home() {
@@ -43,6 +44,10 @@ function Companies() {
   return <CompanyProfiles />
 }
 
+function Jobs() {
+  return <JobProfiles />
+}
+
 export default function App() {
   useTheme()
   const navigate = useNavigate()
@@ -53,14 +58,15 @@ export default function App() {
   const isSkillMemory = location.pathname === '/skill-memory'
   const isHistory = location.pathname === '/interview-history'
   const isCompanies = location.pathname === '/company-profiles'
-  const isDetail = location.pathname.startsWith('/question/') || isRandomQuiz || isInterview || isSkillMemory || isHistory || isCompanies
+  const isJobs = location.pathname === '/job-profiles'
+  const isDetail = location.pathname.startsWith('/question/') || isRandomQuiz || isInterview || isSkillMemory || isHistory || isCompanies || isJobs
   const categoryMatch = location.pathname.match(/\/question\/([^/]+)/)
   const currentCategory = categoryMatch ? decodeURIComponent(categoryMatch[1]) : null
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-canvas-dark">
       <Header
-        title={isInterview ? 'AI 模拟面试' : isCompanies ? '公司与岗位' : isSkillMemory ? '能力画像' : isHistory ? '历史报告' : isRandomQuiz ? '随机面试题' : isDetail ? currentCategory || '题目详情' : 'Java面试宝典'}
+        title={isInterview ? 'AI 模拟面试' : isCompanies ? '公司与岗位' : isJobs ? '岗位画像' : isSkillMemory ? '能力画像' : isHistory ? '历史报告' : isRandomQuiz ? '随机面试题' : isDetail ? currentCategory || '题目详情' : 'Java面试宝典'}
         showBack={isDetail}
         onBack={() => navigate(-1)}
       />
@@ -72,6 +78,7 @@ export default function App() {
         <Route path="/skill-memory" element={<SkillMemory />} />
         <Route path="/interview-history" element={<History />} />
         <Route path="/company-profiles" element={<Companies />} />
+        <Route path="/job-profiles" element={<Jobs />} />
       </Routes>
       <SearchModal />
       {location.pathname === '/' && <FloatingMenu />}

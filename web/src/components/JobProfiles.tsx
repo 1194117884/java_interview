@@ -1,0 +1,19 @@
+import { useState } from 'react'
+import { ClipboardList, Sparkles } from 'lucide-react'
+import { createJobProfile, type JobProfile } from '../lib/interviewEngine'
+
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
+    return <label className="block"><span className="mb-1 block text-xs text-muted dark:text-muted-dark">{label}</span><input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /></label>
+}
+
+export function JobProfiles() {
+    const [title, setTitle] = useState('Java 后端工程师')
+    const [experience, setExperience] = useState('')
+    const [responsibilities, setResponsibilities] = useState('')
+    const [requirements, setRequirements] = useState('')
+    const [description, setDescription] = useState('')
+    const [job, setJob] = useState<JobProfile | null>(null)
+    const analyse = () => setJob(createJobProfile(title, experience, responsibilities, requirements, description))
+
+    return <main className="mx-auto max-w-screen-md px-4 pb-10 pt-20"><section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><div className="flex items-center gap-3"><div className="rounded-xl bg-primary/15 p-2.5"><ClipboardList className="h-5 w-5 text-primary" /></div><div><p className="text-xs font-medium text-primary">岗位画像</p><h2 className="font-display text-2xl text-ink dark:text-ink-dark">录入目标岗位</h2></div></div><p className="mt-3 text-sm text-body dark:text-body-dark">填写可确认的信息并保留完整 JD；分析结果会在开始模拟面试时作为岗位上下文。</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><Field label="岗位名称" value={title} onChange={setTitle} placeholder="例如：Java 后端工程师" /><Field label="经验年限" value={experience} onChange={setExperience} placeholder="例如：3-5 年" /></div><label className="mt-3 block"><span className="mb-1 block text-xs text-muted dark:text-muted-dark">职责（每行一项）</span><textarea value={responsibilities} onChange={event => setResponsibilities(event.target.value)} rows={4} placeholder="负责订单链路设计" className="w-full resize-none rounded-lg border border-hairline bg-canvas p-3 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /></label><label className="mt-3 block"><span className="mb-1 block text-xs text-muted dark:text-muted-dark">任职要求（每行一项）</span><textarea value={requirements} onChange={event => setRequirements(event.target.value)} rows={4} placeholder="熟悉 Java、Redis 与 MySQL" className="w-full resize-none rounded-lg border border-hairline bg-canvas p-3 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /></label><label className="mt-3 block"><span className="mb-1 block text-xs text-muted dark:text-muted-dark">完整 JD 原文</span><textarea value={description} onChange={event => setDescription(event.target.value)} rows={7} placeholder="粘贴完整职位描述…" className="w-full resize-none rounded-lg border border-hairline bg-canvas p-3 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /></label><button onClick={analyse} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white"><Sparkles className="h-4 w-4" />确认并分析岗位</button>{job && <section className="mt-4 rounded-xl bg-soft p-4 text-sm dark:bg-soft-dark"><p className="font-medium text-ink dark:text-ink-dark">已提取重点：{job.skills.join('、')}</p><p className="mt-2 text-xs text-muted dark:text-muted-dark">经验：{job.experience} · 职责 {job.responsibilities.length} 项 · 要求 {job.requirements.length} 项</p></section>}</section></main>
+}

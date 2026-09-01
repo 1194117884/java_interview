@@ -311,6 +311,19 @@ export function analyzeJobDescription(title: string, description: string): JobPr
   }
 }
 
+export function createJobProfile(title: string, experience: string, responsibilities: string, requirements: string, description: string): JobProfile {
+  const analyzed = analyzeJobDescription(title, description)
+  const splitLines = (value: string) => value.split(/\n|[；;]/).map(item => item.trim()).filter(Boolean)
+  return {
+    ...analyzed,
+    title: title.trim() || analyzed.title,
+    experience: experience.trim() || analyzed.experience,
+    description,
+    responsibilities: splitLines(responsibilities).length ? splitLines(responsibilities) : analyzed.responsibilities,
+    requirements: splitLines(requirements).length ? splitLines(requirements) : analyzed.requirements,
+  }
+}
+
 export function getTechnicalQuestions(job: JobProfile, difficulty: QuestionMetadata['difficulty'] = '进阶'): InterviewQuestion[] {
   const targetCategories = skillRules
     .filter(rule => job.skills.includes(rule.name))

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
     analyzeJobDescription,
+    createJobProfile,
     getCompanyInterviewFocus,
     createAgentTurnOutput,
     createInterviewReport,
@@ -194,6 +195,21 @@ test('JD analysis extracts responsibilities, requirements and weighted skills', 
     assert.ok(job.businessKeywords.includes('支付'))
     assert.ok(job.scoringWeights['高并发与稳定性'] > 1)
     assert.ok(job.scoringWeights['微服务与分布式'] > 1)
+})
+
+test('manual job profile keeps experience, responsibilities, requirements and original JD', () => {
+    const job = createJobProfile(
+        'Java 后端工程师',
+        '3-5 年',
+        '负责支付订单链路\n推动稳定性建设',
+        '熟悉 Java、Redis\n具备高并发经验',
+        '完整 JD：支付平台招聘 Java 后端工程师。',
+    )
+
+    assert.equal(job.experience, '3-5 年')
+    assert.deepEqual(job.responsibilities, ['负责支付订单链路', '推动稳定性建设'])
+    assert.deepEqual(job.requirements, ['熟悉 Java、Redis', '具备高并发经验'])
+    assert.equal(job.description, '完整 JD：支付平台招聘 Java 后端工程师。')
 })
 
 test('skill memory retains its source interview session', () => {

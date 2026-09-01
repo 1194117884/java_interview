@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Shuffle, Search, Sun, Moon, Bot, ShieldAlert, BarChart3, Building2 } from 'lucide-react'
+import { Menu, X, Shuffle, Search, Sun, Moon, Bot, ShieldAlert, BarChart3, Building2, ClipboardList } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useTheme } from '../hooks/useTheme'
 
@@ -30,8 +30,13 @@ export function FloatingMenu() {
     },
     {
       icon: Building2,
-      label: '公司与岗位',
+      label: '公司画像',
       onClick: () => { navigate('/company-profiles'); close() },
+    },
+    {
+      icon: ClipboardList,
+      label: '岗位画像',
+      onClick: () => { navigate('/job-profiles'); close() },
     },
     {
       icon: Shuffle,
