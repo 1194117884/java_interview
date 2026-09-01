@@ -5,6 +5,7 @@ import {
     getCompanyInterviewFocus,
     createAgentTurnOutput,
     createInterviewReport,
+    createLearningPlan,
     searchQuestions,
 } from '../src/lib/interviewEngine'
 
@@ -65,4 +66,15 @@ test('report includes answer evidence rather than only conclusions', () => {
     assert.equal(report.evidence.length, 1)
     assert.ok(report.evidence[0].excerpt.includes('QPS'))
     assert.ok(report.evidence[0].dimensions.includes('项目真实性'))
+})
+
+test('learning plan prioritizes weak skills before developing skills', () => {
+    const plan = createLearningPlan([
+        { id: '1', skill: 'Redis', level: 'developing', evidence: '缺少项目数据', confidence: 0.62, updatedAt: '2026/9/1' },
+        { id: '2', skill: 'Java 并发', level: 'weak', evidence: '未覆盖锁原理', confidence: 0.82, updatedAt: '2026/9/1' },
+    ])
+
+    assert.equal(plan[0].skill, 'Java 并发')
+    assert.ok(plan[0].action.includes('原理'))
+    assert.equal(plan[1].skill, 'Redis')
 })

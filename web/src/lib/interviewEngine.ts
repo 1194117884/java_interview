@@ -66,6 +66,13 @@ export interface SkillMemory {
   updatedAt: string
 }
 
+export interface LearningPlanItem {
+  skill: string
+  priority: '高' | '中'
+  action: string
+  evidence: string
+}
+
 export interface AnswerAssessment {
   score: number
   level: SkillMemory['level']
@@ -422,6 +429,21 @@ export function createMemory(question: InterviewQuestion, answer: string): Skill
     confidence: result.level === 'weak' ? 0.82 : 0.62,
     updatedAt: new Date().toLocaleDateString('zh-CN'),
   }
+}
+
+export function createLearningPlan(memories: SkillMemory[]): LearningPlanItem[] {
+  return [...memories]
+    .filter(memory => memory.level !== 'strong')
+    .sort((left, right) => Number(right.level === 'weak') - Number(left.level === 'weak') || right.confidence - left.confidence)
+    .slice(0, 3)
+    .map(memory => ({
+      skill: memory.skill,
+      priority: memory.level === 'weak' ? '高' : '中',
+      action: memory.level === 'weak'
+        ? '先复习核心原理，再用一个真实场景完成口头演练。'
+        : '补充职责、方案取舍和可量化结果，形成可验证的项目案例。',
+      evidence: memory.evidence,
+    }))
 }
 
 export function saveMemories(memories: SkillMemory[]) {
