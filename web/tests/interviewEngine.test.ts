@@ -136,6 +136,17 @@ test('interview can finish after core skills are covered', () => {
     assert.equal(shouldFinishInterview(turns.slice(0, 1), job, 5), false)
 })
 
+test('interview finishes after consecutive low-quality answers', () => {
+    const job = analyzeJobDescription('Java 后端', '需要并发和 Redis 缓存经验')
+    const question = searchQuestions('', { categories: ['Java并发'] })[0]
+    const turns = [
+        { question, answer: '不知道', score: 0, assessment: 'weak', decision: 'next' },
+        { question, answer: '不了解', score: 0, assessment: 'weak', decision: 'next' },
+    ]
+
+    assert.equal(shouldFinishInterview(turns, job, 5), true)
+})
+
 test('saving a company profile replaces a prior profile with the same name', () => {
     const company = { name: '支付平台', industry: '支付', size: '500 人', stage: '成长期', culture: '工程质量', hiringPreferences: '稳定性' }
     const first = upsertCompanyProfile([], company, '2026/9/1')

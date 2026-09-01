@@ -425,11 +425,13 @@ export function createAgentTurnOutput(
 }
 
 export function shouldFinishInterview(
-  turns: Array<{ question: InterviewQuestion }>,
+  turns: Array<{ question: InterviewQuestion; score?: number }>,
   job: JobProfile | null,
   maxQuestions: number,
 ): boolean {
   if (turns.length >= maxQuestions) return true
+  const recentTurns = turns.slice(-2)
+  if (recentTurns.length === 2 && recentTurns.every(turn => (turn.score ?? 4) <= 1)) return true
   if (!job || turns.length < 2) return false
   const coreSkills = job.skills.slice(0, 3)
   const coveredSkills = new Set(turns.flatMap(turn => getQuestionMetadata(turn.question.categoryId, turn.question.title).skills))
