@@ -89,3 +89,23 @@ test('interview trend identifies score improvement across reports', () => {
     assert.equal(trend.direction, 'improving')
     assert.equal(trend.change, 23)
 })
+
+test('JD analysis covers representative role scenarios', () => {
+    const scenarios = [
+        ['初级 Java', '熟悉 Java 基础与 Spring Boot', ['Spring']],
+        ['资深 Java', '精通 JVM、GC、MySQL、Redis 和性能优化', ['JVM', 'MySQL', 'Redis']],
+        ['支付后端', '负责支付链路，保障幂等、资损控制、高并发和 Redis 缓存', ['系统设计', '微服务与分布式', '高并发与稳定性', 'Redis']],
+        ['微服务工程师', '熟悉 Spring Cloud、Dubbo、分布式事务与一致性', ['Spring', '微服务与分布式']],
+        ['高并发后端', '负责 QPS 容量规划、限流、熔断、降级与高可用', ['高并发与稳定性']],
+        ['消息平台工程师', '有 Kafka、RocketMQ 消息队列实践经验', ['消息队列']],
+        ['Spring 工程师', '掌握 Spring Boot、IOC、AOP 与微服务治理', ['Spring']],
+        ['电商后端', '负责订单、库存、事务和 MySQL 索引优化', ['系统设计', 'MySQL']],
+        ['数据服务工程师', '熟悉 SQL、慢查询分析、索引与数据库设计', ['MySQL']],
+        ['产品运营', '负责用户增长、活动运营和跨团队协作', ['Java 基础']],
+    ] as const
+
+    scenarios.forEach(([title, description, expectedSkills]) => {
+        const job = analyzeJobDescription(title, description)
+        expectedSkills.forEach(skill => assert.ok(job.skills.includes(skill), `${title} should include ${skill}`))
+    })
+})
