@@ -8,7 +8,9 @@ export interface CompanyProfile {
   size: string
   stage: string
   culture: string
+  businessModel?: string
   hiringPreferences?: string
+  notes?: string
 }
 
 export interface JobProfile {
@@ -173,13 +175,13 @@ export function getInterviewIntegrityGuidance(): string {
 }
 
 export function getCompanyInterviewFocus(company: CompanyProfile): string[] {
-  const text = `${company.industry} ${company.culture}`.toLowerCase()
+  const text = `${company.industry} ${company.businessModel || ''} ${company.culture} ${company.notes || ''}`.toLowerCase()
   const focus: string[] = []
   if (/支付|金融|银行/.test(text)) focus.push('资金安全、幂等与资损处理')
   if (/电商|交易|订单/.test(text)) focus.push('订单链路、库存一致性与峰值流量')
   if (/工程|质量|稳定|高可用/.test(text)) focus.push('稳定性、可观测性与故障复盘')
   if (/创业|成长期|快速/.test(`${company.stage} ${company.culture}`)) focus.push('快速交付、优先级判断与资源取舍')
-  const preferences = (company.hiringPreferences || '').split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
+  const preferences = `${company.hiringPreferences || ''}\n${company.businessModel || ''}\n${company.notes || ''}`.split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
   return [...new Set([...focus, ...preferences])]
 }
 

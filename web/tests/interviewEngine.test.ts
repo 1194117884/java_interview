@@ -166,6 +166,26 @@ test('saving a company profile replaces a prior profile with the same name', () 
     assert.equal(second[0].updatedAt, '2026/9/2')
 })
 
+test('company profile retains business model and interview notes', () => {
+    const company = {
+        name: '支付平台',
+        industry: '金融科技',
+        size: '500 人',
+        stage: '成长期',
+        businessModel: 'B2B 支付服务',
+        culture: '工程质量',
+        hiringPreferences: '稳定性',
+        notes: '重点关注资损防控经验',
+    }
+    const saved = upsertCompanyProfile([], company, '2026/9/2')
+
+    assert.equal(saved[0].company.businessModel, 'B2B 支付服务')
+    assert.equal(saved[0].company.notes, '重点关注资损防控经验')
+    const focus = getCompanyInterviewFocus(company)
+    assert.ok(focus.includes('B2B 支付服务'))
+    assert.ok(focus.includes('重点关注资损防控经验'))
+})
+
 test('JD analysis extracts responsibilities, requirements and weighted skills', () => {
     const job = analyzeJobDescription('支付后端工程师', '岗位职责：负责支付订单链路和高并发系统设计。任职要求：熟悉 Java、Redis、MySQL、幂等和分布式事务，有支付项目经验。')
 
