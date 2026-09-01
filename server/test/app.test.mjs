@@ -33,3 +33,22 @@ test('memory API requires identity and isolates users', async () => {
     assert.deepEqual(await userB.json(), [])
     await new Promise(resolve => app.close(resolve))
 })
+
+test('CRUD resources support create, read, update and delete per user', async () => {
+    const app = createApp()
+    await new Promise(resolve => app.listen(0, '127.0.0.1', resolve))
+    const address = app.address()
+    const base = `http://127.0.0.1:${address.port}/api/crud/companies`
+    const headers = { authorization: 'Bearer user-a', 'content-type': 'application/json' }
+    const created = await fetch(base, { method: 'POST', headers, body: JSON.stringify({ name: '支付平台' }) })
+    assert.equal(created.status, 201)
+    const company = await created.json()
+    assert.equal(company.name, '支付平台')
+    const updated = await fetch(`${base}/${company.id}`, { method: 'PUT', headers, body: JSON.stringify({ name: '支付平台 2.0' }) })
+    assert.deepEqual(await updated.json(), { id: company.id, name: '支付平台 2.0' })
+    const listed = await fetch(base, { headers: { authorization: 'Bearer user-a' } })
+    assert.deepEqual(await listed.json(), [{ id: company.id, name: '支付平台 2.0' }])
+    const deleted = await fetch(`${base}/${company.id}`, { method: 'DELETE', headers })
+    assert.equal(deleted.status, 204)
+    await new Promise(resolve => app.close(resolve))
+})
