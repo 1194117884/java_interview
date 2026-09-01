@@ -92,6 +92,7 @@ export interface AgentTurnOutput {
 export interface InterviewReport {
   overallScore: number
   dimensions: Array<{ label: string; score: number; note: string }>
+  evidence: Array<{ excerpt: string; dimensions: string[] }>
   risks: string[]
   recommendation: string
 }
@@ -385,6 +386,13 @@ export function createInterviewReport(
   const expressionScore = Math.min(100, structuredAnswers * 25 + 20)
   const fitScore = Math.min(100, Math.round((average + (job?.skills.length || 1) * 9) / 1.4))
   const companyFocus = company ? getCompanyInterviewFocus(company) : []
+  const evidence = turns.filter(item => item.answer.trim()).map(item => {
+    const answer = item.answer.trim()
+    const dimensions = ['技术深度']
+    if (/负责|项目|数据|qps|ms|结果|最终/.test(answer.toLowerCase())) dimensions.push('项目真实性')
+    if (/背景|方案|取舍|结果|因为|所以/.test(answer.toLowerCase())) dimensions.push('表达结构')
+    return { excerpt: answer.length > 100 ? `${answer.slice(0, 100)}…` : answer, dimensions }
+  })
   return {
     overallScore: average,
     dimensions: [
@@ -393,6 +401,7 @@ export function createInterviewReport(
       { label: '表达结构', score: expressionScore, note: structuredAnswers ? '回答包含部分结构化叙述。' : '建议按背景、方案、取舍、结果组织回答。' },
       { label: '岗位匹配度', score: fitScore, note: `本轮覆盖 ${[...(job?.skills.slice(0, 2) || ['基础能力']), ...companyFocus.slice(0, 1)].join('、')} 等重点。` },
     ],
+    evidence,
     risks,
     recommendation: risks.length
       ? `下一轮优先用一个真实项目案例补足证据，再进行技术深挖${companyFocus.length ? `，并关注 ${companyFocus[0]}` : ''}。`

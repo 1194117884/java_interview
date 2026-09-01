@@ -56,3 +56,13 @@ test('report surfaces missing project evidence as a risk', () => {
     assert.ok(report.risks.some(risk => risk.includes('项目职责')))
     assert.ok(report.risks.some(risk => risk.includes('知识缺口')))
 })
+
+test('report includes answer evidence rather than only conclusions', () => {
+    const report = createInterviewReport([
+        { answer: '我负责订单系统的缓存方案，通过压测将峰值 QPS 提升到 3000，并记录了延迟数据。', score: 4 },
+    ], 'technical', null)
+
+    assert.equal(report.evidence.length, 1)
+    assert.ok(report.evidence[0].excerpt.includes('QPS'))
+    assert.ok(report.evidence[0].dimensions.includes('项目真实性'))
+})
