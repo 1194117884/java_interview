@@ -78,6 +78,7 @@ export interface AnswerAssessment {
   level: SkillMemory['level']
   assessment: string
   skill: string
+  safetyFlags: string[]
 }
 
 export interface InterviewDecision {
@@ -300,6 +301,7 @@ export function getHrQuestions(): InterviewQuestion[] {
 
 export function assessAnswer(answer: string, question: InterviewQuestion): AnswerAssessment {
   const normalized = answer.trim().toLowerCase()
+  const safetyFlags = getSafetyFlags(answer)
   const givesUp = ['不知道', '不清楚', '没做过', '不了解'].some(word => normalized.includes(word))
   const evidenceTerms = ['例如', '因为', '所以', '数据', 'qps', 'ms', '方案', '最终', '结果', '负责', '我们']
   const evidenceCount = evidenceTerms.filter(term => normalized.includes(term)).length
@@ -318,7 +320,15 @@ export function assessAnswer(answer: string, question: InterviewQuestion): Answe
       ? '回答具备基本方向，但需要补充原理、取舍或真实场景的量化结果。'
       : '当前回答缺少关键原理或项目证据，建议先记录为需要复习的能力点。'
 
-  return { score, level, assessment, skill: question.focus }
+  return { score, level, assessment, skill: question.focus, safetyFlags }
+}
+
+function getSafetyFlags(answer: string): string[] {
+  const flags: string[] = []
+  if (/1[3-9]\d{9}/.test(answer)) flags.push('手机号')
+  if (/\b[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/.test(answer)) flags.push('邮箱')
+  if (/\b\d{17}[\dXx]\b/.test(answer)) flags.push('身份证号')
+  return flags
 }
 
 export function getFollowUp(question: InterviewQuestion, assessment: AnswerAssessment, depth: number, maxFollowUps = 2): InterviewDecision {
@@ -398,7 +408,9 @@ export function createInterviewReport(
   const expressionScore = Math.min(100, structuredAnswers * 25 + 20)
   const fitScore = Math.min(100, Math.round((average + (job?.skills.length || 1) * 9) / 1.4))
   const companyFocus = company ? getCompanyInterviewFocus(company) : []
-  const evidence = turns.filter(item => item.answer.trim()).map(item => {
+  const sensitiveFlags = turns.flatMap(item => getSafetyFlags(item.answer))
+  if (sensitiveFlags.length) risks.push(`检测到${[...new Set(sensitiveFlags)].join('、')}，已排除出报告证据。`)
+  const evidence = turns.filter(item => item.answer.trim() && !getSafetyFlags(item.answer).length).map(item => {
     const answer = item.answer.trim()
     const dimensions = ['技术深度']
     if (/负责|项目|数据|qps|ms|结果|最终/.test(answer.toLowerCase())) dimensions.push('项目真实性')
@@ -423,6 +435,7 @@ export function createInterviewReport(
 
 export function createMemory(question: InterviewQuestion, answer: string): SkillMemory | null {
   const result = assessAnswer(answer, question)
+  if (result.safetyFlags.length) return null
   if (result.level === 'strong') return null
   return {
     id: `${question.id}-${Date.now()}`,

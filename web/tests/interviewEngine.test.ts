@@ -109,3 +109,12 @@ test('JD analysis covers representative role scenarios', () => {
         expectedSkills.forEach(skill => assert.ok(job.skills.includes(skill), `${title} should include ${skill}`))
     })
 })
+
+test('agent flags sensitive personal information in an answer', () => {
+    const question = searchQuestions('', { categories: ['Java并发'] })[0]
+    const output = createAgentTurnOutput(question, '我负责线程池优化，联系方式是 13800138000，邮箱是 demo@example.com。', null, 0)
+
+    assert.ok(output.assessment.safetyFlags.includes('手机号'))
+    assert.ok(output.assessment.safetyFlags.includes('邮箱'))
+    assert.equal(output.memoryCandidates.length, 0)
+})
