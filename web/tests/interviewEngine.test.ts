@@ -2,10 +2,26 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
     analyzeJobDescription,
+    getCompanyInterviewFocus,
     createAgentTurnOutput,
     createInterviewReport,
     searchQuestions,
 } from '../src/lib/interviewEngine'
+
+test('company profile produces interview focus from business and hiring preferences', () => {
+    const focus = getCompanyInterviewFocus({
+        name: '支付平台',
+        industry: '支付',
+        size: '500 人',
+        stage: '成长期',
+        culture: '重视工程质量',
+        hiringPreferences: '稳定性, 主人翁意识',
+    })
+
+    assert.ok(focus.includes('资金安全、幂等与资损处理'))
+    assert.ok(focus.includes('稳定性'))
+    assert.ok(focus.includes('主人翁意识'))
+})
 
 test('JD analysis extracts Java backend skills', () => {
     const job = analyzeJobDescription('Java 后端工程师', '负责高并发支付系统，使用 Redis、MySQL、Kafka 和 Spring Boot。')

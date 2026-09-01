@@ -32,7 +32,7 @@ export function InterviewStudio() {
     const [memories, setMemories] = useState<SkillMemory[]>(loadMemories)
     const currentQuestion = questions[turn]
     const maxQuestions = duration === '15' ? 3 : duration === '45' ? 7 : 5
-    const report = useMemo(() => createInterviewReport(turns, mode, job), [turns, mode, job])
+    const report = useMemo(() => createInterviewReport(turns, mode, job, company), [turns, mode, job, company])
 
     const analyse = () => {
         const next = analyzeJobDescription(jobTitle, jd)
@@ -83,7 +83,7 @@ export function InterviewStudio() {
         setMemories(next); saveMemories(next)
     }
     const complete = (completedTurns: Turn[]) => {
-        const completedReport = createInterviewReport(completedTurns, mode, job)
+        const completedReport = createInterviewReport(completedTurns, mode, job, company)
         const record = {
             id: `${Date.now()}`,
             completedAt: new Date().toLocaleString('zh-CN'),

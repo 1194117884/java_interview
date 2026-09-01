@@ -8,6 +8,7 @@ export interface CompanyProfile {
   size: string
   stage: string
   culture: string
+  hiringPreferences?: string
 }
 
 export interface JobProfile {
@@ -140,6 +141,17 @@ const skillRules = [
   { name: 'Spring', terms: ['spring', 'spring boot', 'ioc', 'aop'], categories: ['Spring'] },
   { name: '系统设计', terms: ['架构', '设计', '支付', '订单', '系统设计'], categories: ['架构设计', '场景题', '项目难点&亮点'] },
 ]
+
+export function getCompanyInterviewFocus(company: CompanyProfile): string[] {
+  const text = `${company.industry} ${company.culture}`.toLowerCase()
+  const focus: string[] = []
+  if (/支付|金融|银行/.test(text)) focus.push('资金安全、幂等与资损处理')
+  if (/电商|交易|订单/.test(text)) focus.push('订单链路、库存一致性与峰值流量')
+  if (/工程|质量|稳定|高可用/.test(text)) focus.push('稳定性、可观测性与故障复盘')
+  if (/创业|成长期|快速/.test(`${company.stage} ${company.culture}`)) focus.push('快速交付、优先级判断与资源取舍')
+  const preferences = (company.hiringPreferences || '').split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
+  return [...new Set([...focus, ...preferences])]
+}
 
 const categoryMetadata: Record<string, Omit<QuestionMetadata, 'difficulty'>> = {
   Java并发: { skills: ['Java 并发'], experience: '1-5 年', scenarioTags: ['线程安全', '性能'], followUpHints: ['锁竞争时如何排查？', '如何验证线程安全？'] },
@@ -357,6 +369,7 @@ export function createInterviewReport(
   turns: Array<{ answer: string; score: number }>,
   mode: InterviewMode,
   job: JobProfile | null,
+  company?: CompanyProfile,
 ): InterviewReport {
   const average = turns.length ? Math.round(turns.reduce((total, item) => total + item.score, 0) / (turns.length * 4) * 100) : 0
   const answers = turns.map(item => item.answer.toLowerCase())
@@ -371,16 +384,19 @@ export function createInterviewReport(
   const projectScore = Math.min(100, projectEvidence * 28 + 20)
   const expressionScore = Math.min(100, structuredAnswers * 25 + 20)
   const fitScore = Math.min(100, Math.round((average + (job?.skills.length || 1) * 9) / 1.4))
+  const companyFocus = company ? getCompanyInterviewFocus(company) : []
   return {
     overallScore: average,
     dimensions: [
       { label: '技术深度', score: technicalScore, note: technicalScore >= 70 ? '能够继续接受边界与取舍追问。' : '建议补齐原理与故障场景。' },
       { label: '项目真实性', score: projectScore, note: projectEvidence ? '已出现项目证据。' : '缺少职责、数据或结果证据。' },
       { label: '表达结构', score: expressionScore, note: structuredAnswers ? '回答包含部分结构化叙述。' : '建议按背景、方案、取舍、结果组织回答。' },
-      { label: '岗位匹配度', score: fitScore, note: `本轮覆盖 ${job?.skills.slice(0, 3).join('、') || '基础能力'} 等重点。` },
+      { label: '岗位匹配度', score: fitScore, note: `本轮覆盖 ${[...(job?.skills.slice(0, 2) || ['基础能力']), ...companyFocus.slice(0, 1)].join('、')} 等重点。` },
     ],
     risks,
-    recommendation: risks.length ? '下一轮优先用一个真实项目案例补足证据，再进行技术深挖。' : '下一轮可提高难度，练习极端场景和方案取舍。',
+    recommendation: risks.length
+      ? `下一轮优先用一个真实项目案例补足证据，再进行技术深挖${companyFocus.length ? `，并关注 ${companyFocus[0]}` : ''}。`
+      : `下一轮可提高难度，练习极端场景和方案取舍${companyFocus.length ? `，重点围绕 ${companyFocus[0]}` : ''}。`,
   }
 }
 
