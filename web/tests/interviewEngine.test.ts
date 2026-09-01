@@ -7,6 +7,7 @@ import {
     createInterviewReport,
     createLearningPlan,
     getInterviewTrend,
+    upsertCompanyProfile,
     shouldFinishInterview,
     searchQuestions,
 } from '../src/lib/interviewEngine'
@@ -131,4 +132,14 @@ test('interview can finish after core skills are covered', () => {
 
     assert.equal(shouldFinishInterview(turns, job, 5), true)
     assert.equal(shouldFinishInterview(turns.slice(0, 1), job, 5), false)
+})
+
+test('saving a company profile replaces a prior profile with the same name', () => {
+    const company = { name: '支付平台', industry: '支付', size: '500 人', stage: '成长期', culture: '工程质量', hiringPreferences: '稳定性' }
+    const first = upsertCompanyProfile([], company, '2026/9/1')
+    const second = upsertCompanyProfile(first, { ...company, culture: '高可用优先' }, '2026/9/2')
+
+    assert.equal(second.length, 1)
+    assert.equal(second[0].company.culture, '高可用优先')
+    assert.equal(second[0].updatedAt, '2026/9/2')
 })

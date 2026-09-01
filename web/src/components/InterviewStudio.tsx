@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
 import { BarChart3, Bot, Bookmark, Building2, CheckCircle2, ChevronRight, ClipboardList, Lightbulb, MessageSquare, ShieldAlert, Sparkles, UserRound } from 'lucide-react'
-import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getHrQuestions, getTechnicalQuestions, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, shouldFinishInterview, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
+import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getHrQuestions, getTechnicalQuestions, loadActiveCompany, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, shouldFinishInterview, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
 
 type Step = 'setup' | 'interview' | 'report'
 type Turn = InterviewTurnRecord
-const emptyCompany: CompanyProfile = { name: '', industry: '', size: '', stage: '', culture: '' }
 const splitItems = (value: string) => value.split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
@@ -13,7 +12,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
 
 export function InterviewStudio() {
     const [step, setStep] = useState<Step>('setup')
-    const [company, setCompany] = useState<CompanyProfile>(emptyCompany)
+    const [company, setCompany] = useState<CompanyProfile>(loadActiveCompany)
     const [jobTitle, setJobTitle] = useState('Java 后端工程师')
     const [jd, setJd] = useState('')
     const [job, setJob] = useState<JobProfile | null>(null)

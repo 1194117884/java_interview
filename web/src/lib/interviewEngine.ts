@@ -26,6 +26,12 @@ export interface SavedInterviewProfile {
   updatedAt: string
 }
 
+export interface SavedCompanyProfile {
+  id: string
+  company: CompanyProfile
+  updatedAt: string
+}
+
 export interface InterviewQuestion {
   id: string
   categoryId: string
@@ -165,6 +171,11 @@ export function getCompanyInterviewFocus(company: CompanyProfile): string[] {
   if (/创业|成长期|快速/.test(`${company.stage} ${company.culture}`)) focus.push('快速交付、优先级判断与资源取舍')
   const preferences = (company.hiringPreferences || '').split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
   return [...new Set([...focus, ...preferences])]
+}
+
+export function upsertCompanyProfile(profiles: SavedCompanyProfile[], company: CompanyProfile, updatedAt: string): SavedCompanyProfile[] {
+  const id = company.name.trim() || '未命名公司'
+  return [{ id, company, updatedAt }, ...profiles.filter(profile => profile.id !== id)].slice(0, 20)
 }
 
 const categoryMetadata: Record<string, Omit<QuestionMetadata, 'difficulty'>> = {
@@ -511,6 +522,31 @@ export function loadInterviewProfiles(): SavedInterviewProfile[] {
 
 export function saveInterviewProfiles(profiles: SavedInterviewProfile[]) {
   localStorage.setItem('java-interview-profiles', JSON.stringify(profiles))
+}
+
+export function loadCompanyProfiles(): SavedCompanyProfile[] {
+  try {
+    const value = JSON.parse(localStorage.getItem('java-interview-companies') || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function saveCompanyProfiles(profiles: SavedCompanyProfile[]) {
+  localStorage.setItem('java-interview-companies', JSON.stringify(profiles))
+}
+
+export function loadActiveCompany(): CompanyProfile {
+  try {
+    return JSON.parse(localStorage.getItem('java-interview-active-company') || 'null') || { name: '', industry: '', size: '', stage: '', culture: '' }
+  } catch {
+    return { name: '', industry: '', size: '', stage: '', culture: '' }
+  }
+}
+
+export function saveActiveCompany(company: CompanyProfile) {
+  localStorage.setItem('java-interview-active-company', JSON.stringify(company))
 }
 
 export function loadInterviewSessions(): InterviewSessionRecord[] {
