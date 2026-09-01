@@ -15,6 +15,7 @@ export function InterviewStudio() {
     const [company, setCompany] = useState<CompanyProfile>(loadActiveCompany)
     const [jobTitle, setJobTitle] = useState('Java 后端工程师')
     const [jd, setJd] = useState('')
+    const [analysisState, setAnalysisState] = useState<'idle' | 'analysing' | 'success' | 'error'>('idle')
     const [job, setJob] = useState<JobProfile | null>(null)
     const [skillInput, setSkillInput] = useState('')
     const [priorityInput, setPriorityInput] = useState('')
@@ -35,10 +36,18 @@ export function InterviewStudio() {
     const report = useMemo(() => createInterviewReport(turns, mode, job, company), [turns, mode, job, company])
 
     const analyse = () => {
-        const next = analyzeJobDescription(jobTitle, jd)
-        setJob(next)
-        setSkillInput(next.skills.join('，'))
-        setPriorityInput(next.priorities.join('\n'))
+        if (analysisState === 'analysing') return
+        setAnalysisState('analysing')
+        try {
+            if (!jd.trim()) throw new Error('empty_jd')
+            const next = analyzeJobDescription(jobTitle, jd)
+            setJob(next)
+            setSkillInput(next.skills.join('，'))
+            setPriorityInput(next.priorities.join('\n'))
+            setAnalysisState('success')
+        } catch {
+            setAnalysisState('error')
+        }
     }
     const resolvedJob = () => {
         const base = job || analyzeJobDescription(jobTitle, jd)

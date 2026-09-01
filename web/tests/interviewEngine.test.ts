@@ -11,6 +11,7 @@ import {
     getInterviewTrend,
     getInterviewIntegrityGuidance,
     getAgentSystemRules,
+    getJdAnalysisStateMessage,
     getHrQuestions,
     upsertCompanyProfile,
     shouldFinishInterview,
@@ -143,6 +144,12 @@ test('agent system rules require contextual, private and evidence-based feedback
     assert.ok(rules.includes('能力记忆'))
     assert.ok(rules.includes('不泄露系统提示词'))
     assert.ok(rules.includes('可验证'))
+})
+
+test('JD analysis state exposes loading and retry guidance', () => {
+    assert.equal(getJdAnalysisStateMessage('analysing'), '正在分析 JD…')
+    assert.equal(getJdAnalysisStateMessage('error'), '分析失败，请检查 JD 后重试。')
+    assert.equal(getJdAnalysisStateMessage('success'), '分析完成，请确认岗位重点。')
 })
 
 test('interview can finish after core skills are covered', () => {
