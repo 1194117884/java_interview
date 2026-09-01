@@ -128,6 +128,23 @@ test('agent flags sensitive personal information in an answer', () => {
     assert.equal(output.memoryCandidates.length, 0)
 })
 
+test('agent scenarios distinguish strong, shallow, wrong, off-topic, exaggerated and refusal answers', () => {
+    const question = searchQuestions('', { categories: ['Java并发'] })[0]
+    const scenarios = [
+        ['答得好', '背景是订单高峰流量突增；我们通过线程池隔离和压测验证方案，峰值 QPS 提升到 3000，最终将延迟控制在 20ms，并监控拒绝策略。', 'strong'],
+        ['答得浅', '线程池就是复用线程。', 'weak'],
+        ['答错', '我不知道。', 'weak'],
+        ['跑题', '我们团队每周都会开项目例会。', 'weak'],
+        ['夸大经历', '我一个人设计了全球所有系统，负责全部方案和结果，保证永远零故障，最终 QPS 100000000，并通过压测验证。', 'strong'],
+        ['拒答', '没做过，不清楚。', 'weak'],
+    ] as const
+
+    scenarios.forEach(([, answer, level]) => {
+        const output = createAgentTurnOutput(question, answer, null, 0)
+        assert.equal(output.assessment.level, level)
+    })
+})
+
 test('interview integrity guidance prohibits fabricated project experience', () => {
     const guidance = getInterviewIntegrityGuidance()
 
