@@ -70,7 +70,7 @@ export function InterviewStudio() {
     }
     const start = () => {
         const profile = resolvedJob()
-        const queue = mode === 'technical' ? getTechnicalQuestions(profile, difficulty) : getHrQuestions()
+        const queue = mode === 'technical' ? getTechnicalQuestions(profile, difficulty) : getHrQuestions(profile, company)
         const nextSessionId = `${Date.now()}`
         setJob(profile)
         setQuestions(queue)

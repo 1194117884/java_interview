@@ -8,6 +8,7 @@ import {
     createLearningPlan,
     createMemory,
     getInterviewTrend,
+    getHrQuestions,
     upsertCompanyProfile,
     shouldFinishInterview,
     searchQuestions,
@@ -160,4 +161,13 @@ test('skill memory retains its source interview session', () => {
     const memory = createMemory(question, '不知道。', 'session-42')
 
     assert.equal(memory?.sourceSessionId, 'session-42')
+})
+
+test('HR questions use job responsibilities and company focus', () => {
+    const job = analyzeJobDescription('支付后端', '岗位职责：负责支付订单链路。任职要求：熟悉高并发与幂等。')
+    const questions = getHrQuestions(job, { name: '支付平台', industry: '支付', size: '500 人', stage: '成长期', culture: '工程质量' })
+
+    assert.ok(questions[0].title.includes('支付订单链路'))
+    assert.ok(questions.some(question => question.title.includes('分歧')))
+    assert.ok(questions.some(question => question.title.includes('为什么选择')))
 })

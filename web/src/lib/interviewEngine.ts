@@ -317,8 +317,15 @@ export function getTechnicalQuestions(job: JobProfile, difficulty: QuestionMetad
   return (candidates.length ? candidates : fallback).slice(0, 12)
 }
 
-export function getHrQuestions(): InterviewQuestion[] {
-  return hrQuestions.map((title, index) => ({
+export function getHrQuestions(job?: JobProfile | null, company?: CompanyProfile): InterviewQuestion[] {
+  const responsibility = job?.responsibilities[0]?.replace(/^岗位职责[:：]?/, '') || job?.businessKeywords[0] || '最近一个核心项目'
+  const companyFocus = company ? getCompanyInterviewFocus(company)[0] : ''
+  const contextualQuestions = [
+    `请围绕“${responsibility}”介绍一个项目：业务目标、你的职责、技术方案和结果分别是什么？`,
+    `这个项目中最棘手的问题是什么？你如何定位、决策并推动落地？${companyFocus ? `请结合${companyFocus}说明。` : ''}`,
+    ...hrQuestions.slice(2),
+  ]
+  return contextualQuestions.map((title, index) => ({
     id: `hr-${index}`,
     title,
     category: '项目与 HR',
