@@ -12,6 +12,7 @@ import {
     getInterviewIntegrityGuidance,
     getAgentSystemRules,
     getJdAnalysisStateMessage,
+    getRoleInterviewPlan,
     getHrQuestions,
     upsertCompanyProfile,
     shouldFinishInterview,
@@ -150,6 +151,16 @@ test('JD analysis state exposes loading and retry guidance', () => {
     assert.equal(getJdAnalysisStateMessage('analysing'), '正在分析 JD…')
     assert.equal(getJdAnalysisStateMessage('error'), '分析失败，请检查 JD 后重试。')
     assert.equal(getJdAnalysisStateMessage('success'), '分析完成，请确认岗位重点。')
+})
+
+test('role interview plan defines focus, question scope and follow-up depth', () => {
+    const job = analyzeJobDescription('支付后端', '负责支付、高并发、幂等、Redis 和 Kafka。')
+    const plan = getRoleInterviewPlan(job)
+
+    assert.ok(plan.focusSkills.includes('系统设计'))
+    assert.ok(plan.questionCategories.includes('Redis'))
+    assert.ok(plan.questionCategories.includes('Kafka'))
+    assert.equal(plan.maxFollowUpDepth, 3)
 })
 
 test('interview can finish after core skills are covered', () => {

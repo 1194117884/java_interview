@@ -347,6 +347,22 @@ export function getTechnicalQuestions(job: JobProfile, difficulty: QuestionMetad
   return (candidates.length ? candidates : fallback).slice(0, 12)
 }
 
+export interface RoleInterviewPlan {
+  focusSkills: string[]
+  questionCategories: string[]
+  maxFollowUpDepth: number
+}
+
+export function getRoleInterviewPlan(job: JobProfile): RoleInterviewPlan {
+  const matchedRules = skillRules.filter(rule => job.skills.includes(rule.name))
+  const questionCategories = [...new Set(matchedRules.flatMap(rule => rule.categories))]
+  return {
+    focusSkills: job.skills,
+    questionCategories: questionCategories.length ? questionCategories : ['Java基础', 'Java并发'],
+    maxFollowUpDepth: job.skills.some(skill => skill === '高并发与稳定性' || skill === '系统设计') ? 3 : 2,
+  }
+}
+
 export function getHrQuestions(job?: JobProfile | null, company?: CompanyProfile): InterviewQuestion[] {
   const responsibility = job?.responsibilities[0]?.replace(/^岗位职责[:：]?/, '') || job?.businessKeywords[0] || '最近一个核心项目'
   const companyFocus = company ? getCompanyInterviewFocus(company)[0] : ''
