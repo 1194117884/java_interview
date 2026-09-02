@@ -231,6 +231,26 @@ export function getQuestionMetadata(categoryId: string, title: string): Question
   return { ...base, difficulty: inferDifficulty(title) }
 }
 
+export function getInterviewAnswerGuide(question: InterviewQuestion): string {
+  const guides: Record<string, string> = {
+    Java并发: '先说明线程安全边界与涉及的共享资源；再解释锁、volatile 或线程池等机制及选择原因；最后结合真实场景说明压测结果、监控指标和异常处理。',
+    JVM: '先定位问题属于内存、GC、类加载还是线程；说明使用的诊断工具和关键指标；再给出优化方案、风险取舍与验证结果。',
+    MySQL: '先从表结构、索引和 SQL 执行计划分析；说明事务隔离与锁的影响；再给出优化措施，并用耗时、扫描行数或吞吐数据验证。',
+    Redis: '先说明缓存的数据边界和失效策略；分别处理穿透、击穿、雪崩与热点问题；最后说明缓存与数据库的一致性方案、降级策略和监控告警。',
+    Kafka: '说明消息生产、消费和失败重试链路；解释如何保证不丢失、可重试及幂等消费；补充积压监控、顺序性和故障恢复方案。',
+    RocketMQ: '说明消息生产、消费和失败重试链路；解释如何保证不丢失、可重试及幂等消费；补充积压监控、顺序性和故障恢复方案。',
+    RabbitMQ: '说明消息生产、消费和失败重试链路；解释如何保证不丢失、可重试及幂等消费；补充积压监控、顺序性和故障恢复方案。',
+    微服务: '先划分服务边界和调用链路；说明超时、重试、熔断及幂等策略；再解释分布式事务或补偿方案，并给出可观测性与演练措施。',
+    分布式: '先划分服务边界和调用链路；说明超时、重试、熔断及幂等策略；再解释分布式事务或补偿方案，并给出可观测性与演练措施。',
+    高并发: '先估算流量、容量与瓶颈；说明限流、隔离、缓存和降级设计；最后给出压测数据、监控阈值和故障恢复预案。',
+    高可用: '先定义可用性目标和故障范围；说明冗余、限流、降级与自动恢复机制；最后补充监控告警、演练过程和复盘改进。',
+    架构设计: '从业务目标与约束开始，拆分核心链路和数据模型；说明方案取舍、一致性与失败处理；最后给出容量估算、监控指标和演进路径。',
+    场景题: '从业务目标与约束开始，拆分核心链路和数据模型；说明方案取舍、一致性与失败处理；最后给出容量估算、监控指标和演进路径。',
+    hr: '按“背景—任务—行动—结果”组织：说明你的具体职责、关键决策和协作方式，用可核验的数据说明结果，并坦诚说明反思与改进。',
+  }
+  return guides[question.categoryId] || '先解释核心概念和适用边界；再结合你的项目说明方案、取舍与异常处理；最后用数据或验证方式说明结果。'
+}
+
 export function searchQuestions(query = '', filters: QuestionSearchFilters = {}): InterviewQuestion[] {
   const normalized = query.trim().toLowerCase()
   const requestedSkills = filters.skills || []

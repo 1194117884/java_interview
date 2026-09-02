@@ -19,6 +19,7 @@ import {
     shouldFinishInterview,
     searchQuestions,
     selectNextInterviewQuestion,
+    getInterviewAnswerGuide,
 } from '../src/lib/interviewEngine'
 
 test('company profile produces interview focus from business and hiring preferences', () => {
@@ -83,6 +84,14 @@ test('report gives a clear suitability verdict and names gaps against the JD', (
     assert.equal(report.verdict, '不建议进入下一轮')
     assert.ok(report.gaps.length > 0)
     assert.ok(report.gaps.some(gap => gap.includes('Redis') || gap.includes('MySQL') || gap.includes('高并发')))
+})
+
+test('each interview question has a topic-specific reference answer guide', () => {
+    const question = searchQuestions('', { categories: ['Redis'] })[0]
+    const guide = getInterviewAnswerGuide(question)
+
+    assert.ok(guide.includes('缓存'))
+    assert.ok(guide.includes('一致性'))
 })
 
 test('report surfaces missing project evidence as a risk', () => {
