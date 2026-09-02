@@ -18,6 +18,7 @@ import {
     upsertCompanyProfile,
     shouldFinishInterview,
     searchQuestions,
+    selectNextInterviewQuestion,
 } from '../src/lib/interviewEngine'
 
 test('company profile produces interview focus from business and hiring preferences', () => {
@@ -60,6 +61,28 @@ test('core skill answer produces a structured follow-up decision', () => {
     assert.equal(output.nextAction, 'follow_up')
     assert.ok(output.question)
     assert.equal(output.memoryCandidates.length, 0)
+})
+
+test('next technical question prioritizes an uncovered JD skill instead of a fixed queue', () => {
+    const job = analyzeJobDescription('Java 后端工程师', '需要熟悉 Redis、MySQL 与 Kafka 消息队列。')
+    const asked = searchQuestions('', { categories: ['Redis'] })[0]
+    const next = selectNextInterviewQuestion(job, 'technical', [asked], '进阶')
+
+    assert.ok(next)
+    assert.notEqual(next.id, asked.id)
+    assert.ok(['MySQL', 'Kafka', 'RocketMQ', 'RabbitMQ'].includes(next.categoryId))
+})
+
+test('report gives a clear suitability verdict and names gaps against the JD', () => {
+    const job = analyzeJobDescription('Java 后端工程师', '需要熟悉 Redis、MySQL 和高并发。')
+    const report = createInterviewReport([
+        { answer: '我不清楚 Redis 缓存击穿如何处理。', score: 0 },
+        { answer: 'MySQL 索引我只会基本使用，没有做过性能优化。', score: 1 },
+    ], 'technical', job)
+
+    assert.equal(report.verdict, '不建议进入下一轮')
+    assert.ok(report.gaps.length > 0)
+    assert.ok(report.gaps.some(gap => gap.includes('Redis') || gap.includes('MySQL') || gap.includes('高并发')))
 })
 
 test('report surfaces missing project evidence as a risk', () => {

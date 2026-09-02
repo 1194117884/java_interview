@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { BarChart3, Bot, Bookmark, Building2, CheckCircle2, ChevronRight, ClipboardList, Lightbulb, MessageSquare, ShieldAlert, Sparkles, UserRound } from 'lucide-react'
-import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getHrQuestions, getInterviewIntegrityGuidance, getTechnicalQuestions, loadActiveCompany, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, shouldFinishInterview, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
+import { analyzeJobDescription, clearInterviewDraft, createAgentTurnOutput, createInterviewReport, getInterviewIntegrityGuidance, loadActiveCompany, loadInterviewDraft, loadInterviewProfiles, loadInterviewSessions, loadMemories, saveInterviewDraft, saveInterviewProfiles, saveInterviewSessions, saveMemories, selectNextInterviewQuestion, shouldFinishInterview, type CompanyProfile, type InterviewMode, type InterviewQuestion, type JobProfile, type InterviewTurnRecord, type SavedInterviewProfile, type SkillMemory } from '../lib/interviewEngine'
 
 type Step = 'setup' | 'interview' | 'report'
 type Turn = InterviewTurnRecord
@@ -30,6 +30,7 @@ export function InterviewStudio() {
     const [turn, setTurn] = useState(0)
     const [answer, setAnswer] = useState('')
     const [turns, setTurns] = useState<Turn[]>([])
+    const [interviewerFeedback, setInterviewerFeedback] = useState('')
     const [memories, setMemories] = useState<SkillMemory[]>(loadMemories)
     const currentQuestion = questions[turn]
     const maxQuestions = duration === '15' ? 3 : duration === '45' ? 7 : 5
@@ -79,11 +80,13 @@ export function InterviewStudio() {
     }
     const start = () => {
         const profile = resolvedJob()
-        const queue = mode === 'technical' ? getTechnicalQuestions(profile, difficulty) : getHrQuestions(profile, company)
+        const firstQuestion = selectNextInterviewQuestion(profile, mode, [], difficulty, company)
+        if (!firstQuestion) return
+        const queue = [firstQuestion]
         const nextSessionId = `${Date.now()}`
         setJob(profile)
         setQuestions(queue)
-        setTurn(0); setTurns([]); setAnswer(''); setSessionId(nextSessionId); setStep('interview')
+        setTurn(0); setTurns([]); setAnswer(''); setInterviewerFeedback(''); setSessionId(nextSessionId); setStep('interview')
         const nextDraft = { company, job: profile, mode, duration, difficulty, goal, questions: queue, turn: 0, turns: [], updatedAt: new Date().toLocaleString('zh-CN'), sessionId: nextSessionId }
         saveInterviewDraft(nextDraft); setDraft(nextDraft)
     }
@@ -116,16 +119,20 @@ export function InterviewStudio() {
         const agentOutput = createAgentTurnOutput(currentQuestion, answer, job, depth, sessionId)
         const completed = [...turns, { question: currentQuestion, answer, score: agentOutput.assessment.score, assessment: agentOutput.assessment.assessment, decision: agentOutput.reason }]
         agentOutput.memoryCandidates.forEach(remember); setTurns(completed); setAnswer('')
+        setInterviewerFeedback(`${agentOutput.assessment.assessment} ${agentOutput.reason}`)
         if (agentOutput.nextAction === 'follow_up' && agentOutput.question && completed.length < maxQuestions) {
             const queue = [...questions.slice(0, turn + 1), agentOutput.question, ...questions.slice(turn + 1)]
             setQuestions(queue); setTurn(turn + 1)
             const nextDraft = { company, job, mode, duration, difficulty, goal, questions: queue, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN'), sessionId }
             saveInterviewDraft(nextDraft); setDraft(nextDraft)
         }
-        else if (turn + 1 >= questions.length || shouldFinishInterview(completed, job, maxQuestions)) complete(completed)
+        else if (shouldFinishInterview(completed, job, maxQuestions)) complete(completed)
         else {
-            setTurn(turn + 1)
-            const nextDraft = { company, job, mode, duration, difficulty, goal, questions, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN'), sessionId }
+            const nextQuestion = selectNextInterviewQuestion(job, mode, completed.map(item => item.question), difficulty, company)
+            if (!nextQuestion) { complete(completed); return }
+            const queue = [...questions.slice(0, turn + 1), nextQuestion]
+            setQuestions(queue); setTurn(turn + 1)
+            const nextDraft = { company, job, mode, duration, difficulty, goal, questions: queue, turn: turn + 1, turns: completed, updatedAt: new Date().toLocaleString('zh-CN'), sessionId }
             saveInterviewDraft(nextDraft); setDraft(nextDraft)
         }
     }
@@ -133,19 +140,20 @@ export function InterviewStudio() {
         if (!draft) return
         setCompany(draft.company); setJob(draft.job); setJobTitle(draft.job?.title || 'Java 后端工程师'); setJd(draft.job?.description || '')
         setMode(draft.mode); setDuration(draft.duration); setDifficulty(draft.difficulty); setGoal(draft.goal)
-        setQuestions(draft.questions); setTurn(draft.turn); setTurns(draft.turns); setSessionId(draft.sessionId || `${Date.now()}`); setAnswer(''); setStep('interview')
+        setQuestions(draft.questions); setTurn(draft.turn); setTurns(draft.turns); setSessionId(draft.sessionId || `${Date.now()}`); setAnswer(''); setInterviewerFeedback(''); setStep('interview')
     }
     const abandonDraft = () => { clearInterviewDraft(); setDraft(null) }
 
     if (step === 'report') return <main className="mx-auto max-w-screen-md px-4 pb-10 pt-20">
-        <section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><div className="flex items-start gap-3"><div className="rounded-xl bg-primary/15 p-2.5"><BarChart3 className="h-5 w-5 text-primary" /></div><div><p className="text-xs font-medium text-primary">{mode === 'technical' ? '技术面' : 'HR + 项目面'}完成 · {difficulty} · {goal}</p><h2 className="font-display text-2xl text-ink dark:text-ink-dark">本轮岗位匹配度 {report.overallScore}%</h2></div></div><p className="mt-4 text-sm text-body dark:text-body-dark">{report.recommendation}</p></section>
+        <section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><div className="flex items-start gap-3"><div className="rounded-xl bg-primary/15 p-2.5"><BarChart3 className="h-5 w-5 text-primary" /></div><div><p className="text-xs font-medium text-primary">{mode === 'technical' ? '技术面' : 'HR + 项目面'}完成 · {difficulty} · {goal}</p><h2 className="font-display text-2xl text-ink dark:text-ink-dark">综合结论：{report.verdict}</h2><p className="mt-1 text-sm text-body dark:text-body-dark">岗位匹配度 {report.overallScore}%</p></div></div><p className="mt-4 text-sm text-body dark:text-body-dark">{report.recommendation}</p></section>
         <section className="mt-4 grid grid-cols-2 gap-3">{report.dimensions.map(item => <article key={item.label} className="rounded-xl border border-hairline bg-canvas p-4 dark:border-hairline-dark dark:bg-canvas-dark"><p className="text-xs text-muted dark:text-muted-dark">{item.label}</p><p className="mt-1 font-display text-2xl text-ink dark:text-ink-dark">{item.score}%</p><p className="mt-1 text-xs text-body dark:text-body-dark">{item.note}</p></article>)}</section>
         {report.risks.length > 0 && <section className="mt-4 rounded-xl bg-red-500/5 p-4"><h3 className="text-sm font-medium text-red-700 dark:text-red-400">风险项</h3><ul className="mt-2 space-y-1 text-xs text-body dark:text-body-dark">{report.risks.map(risk => <li key={risk}>• {risk}</li>)}</ul></section>}
+        {report.gaps.length > 0 && <section className="mt-4 rounded-xl bg-amber-500/10 p-4"><h3 className="text-sm font-medium text-ink dark:text-ink-dark">与 JD 的差距</h3><ul className="mt-2 space-y-1 text-xs text-body dark:text-body-dark">{report.gaps.map(gap => <li key={gap}>• {gap}</li>)}</ul></section>}
         {report.evidence.length > 0 && <section className="mt-4 rounded-xl border border-hairline bg-canvas p-4 dark:border-hairline-dark dark:bg-canvas-dark"><h3 className="text-sm font-medium text-ink dark:text-ink-dark">评分依据：回答证据</h3><div className="mt-3 space-y-3">{report.evidence.map((item, index) => <article key={`${item.excerpt}-${index}`} className="border-l-2 border-primary/40 pl-3"><p className="text-xs text-primary">关联维度：{item.dimensions.join('、')}</p><p className="mt-1 text-sm text-body dark:text-body-dark">“{item.excerpt}”</p></article>)}</div></section>}
         <section className="mt-4 space-y-3"><h3 className="font-semibold text-ink dark:text-ink-dark">逐题反馈</h3>{turns.map((item, index) => <article key={`${item.question.id}-${index}`} className="rounded-xl border border-hairline bg-canvas p-4 dark:border-hairline-dark dark:bg-canvas-dark"><p className="mb-1 text-xs text-primary">第 {index + 1} 题 · {item.question.focus} · {item.score}/4</p><h4 className="text-sm font-medium text-ink dark:text-ink-dark">{item.question.title}</h4><p className="mt-2 text-sm text-body dark:text-body-dark">{item.assessment}</p><p className="mt-2 text-xs text-muted dark:text-muted-dark">面试官决策：{item.decision}</p></article>)}</section><button onClick={() => setStep('setup')} className="mt-6 w-full rounded-xl bg-primary py-3 text-sm font-medium text-white">再进行一次模拟面试</button>
     </main>
 
-    if (step === 'interview' && currentQuestion) return <main className="mx-auto max-w-screen-md px-4 pb-10 pt-20"><div className="mb-4 flex items-center justify-between"><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">{mode === 'technical' ? '技术面试官' : 'HR + 项目面试官'}</span><span className="text-xs text-muted dark:text-muted-dark">已回答 {turns.length} / {maxQuestions} 题</span></div><section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><div className="flex gap-3"><div className="h-fit rounded-xl bg-primary p-2.5"><Bot className="h-5 w-5 text-white" /></div><div><p className="text-xs font-medium text-primary">重点：{currentQuestion.focus}</p><h2 className="mt-1 font-display text-xl leading-relaxed text-ink dark:text-ink-dark">{currentQuestion.title}</h2><p className="mt-3 text-xs text-muted dark:text-muted-dark">请结合原理、具体场景、职责与可量化结果回答。回答充分时会继续深挖，证据不足时会记录并切换重点。</p></div></div></section><section className="mt-4"><label className="mb-2 block text-sm font-medium text-ink dark:text-ink-dark">你的回答</label><textarea value={answer} onChange={event => setAnswer(event.target.value)} rows={8} placeholder="开始作答。尽量说明背景、方案、取舍和结果…" className="w-full resize-none rounded-xl border border-hairline bg-canvas p-3 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /><p className="mt-2 text-xs text-muted dark:text-muted-dark">{getInterviewIntegrityGuidance()}</p><button disabled={!answer.trim()} onClick={submit} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-45">提交回答 <ChevronRight className="h-4 w-4" /></button><button onClick={() => setStep('report')} className="mt-3 w-full py-2 text-xs text-muted dark:text-muted-dark">结束本次面试并查看报告</button></section><div className="mt-3 rounded-xl bg-soft p-4 text-xs text-body dark:bg-soft-dark dark:text-body-dark"><Lightbulb className="mr-1 inline h-4 w-4 text-primary" />能力记忆只保存在当前浏览器，可在能力画像页面查看、修正或删除。</div></main>
+    if (step === 'interview' && currentQuestion) return <main className="mx-auto max-w-screen-md px-4 pb-10 pt-20"><div className="mb-4 flex items-center justify-between"><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">{mode === 'technical' ? '技术面试官' : 'HR + 项目面试官'}</span><span className="text-xs text-muted dark:text-muted-dark">已回答 {turns.length} / {maxQuestions} 题</span></div>{interviewerFeedback && <section className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4"><p className="text-xs font-medium text-primary">面试官回应 · 已据此调整下一题</p><p className="mt-1 text-sm text-body dark:text-body-dark">{interviewerFeedback}</p></section>}<section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><div className="flex gap-3"><div className="h-fit rounded-xl bg-primary p-2.5"><Bot className="h-5 w-5 text-white" /></div><div><p className="text-xs font-medium text-primary">重点：{currentQuestion.focus}</p><h2 className="mt-1 font-display text-xl leading-relaxed text-ink dark:text-ink-dark">{currentQuestion.title}</h2><p className="mt-3 text-xs text-muted dark:text-muted-dark">请结合原理、具体场景、职责与可量化结果回答。回答充分时会继续深挖，证据不足时会记录并切换重点。</p></div></div></section><section className="mt-4"><label className="mb-2 block text-sm font-medium text-ink dark:text-ink-dark">你的回答</label><textarea value={answer} onChange={event => setAnswer(event.target.value)} rows={8} placeholder="开始作答。尽量说明背景、方案、取舍和结果…" className="w-full resize-none rounded-xl border border-hairline bg-canvas p-3 text-sm text-ink outline-none focus:border-primary dark:border-hairline-dark dark:bg-canvas-dark dark:text-ink-dark" /><p className="mt-2 text-xs text-muted dark:text-muted-dark">{getInterviewIntegrityGuidance()}</p><button disabled={!answer.trim()} onClick={submit} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-45">提交并获取面试官回应 <ChevronRight className="h-4 w-4" /></button><button onClick={() => complete(turns)} className="mt-3 w-full py-2 text-xs text-muted dark:text-muted-dark">结束本次面试并查看报告</button></section><div className="mt-3 rounded-xl bg-soft p-4 text-xs text-body dark:bg-soft-dark dark:text-body-dark"><Lightbulb className="mr-1 inline h-4 w-4 text-primary" />能力记忆只保存在当前浏览器，可在能力画像页面查看、修正或删除。</div></main>
 
     if (step === 'setup' && draft) return <main className="mx-auto max-w-screen-md px-4 pb-10 pt-20"><section className="rounded-2xl border border-hairline bg-card p-5 dark:border-hairline-dark dark:bg-card-dark"><p className="text-xs font-medium text-primary">发现未完成的模拟面试</p><h2 className="mt-1 font-display text-2xl text-ink dark:text-ink-dark">继续上次会话？</h2><p className="mt-3 text-sm text-body dark:text-body-dark">{draft.job?.title || 'Java 后端工程师'} · 已完成 {draft.turns.length} 题 · 上次保存于 {draft.updatedAt}</p><button onClick={resumeDraft} className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-medium text-white">继续面试</button><button onClick={abandonDraft} className="mt-2 w-full py-2 text-xs text-muted dark:text-muted-dark">放弃此草稿</button></section></main>
 

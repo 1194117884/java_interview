@@ -115,6 +115,8 @@ export interface InterviewReport {
   dimensions: Array<{ label: string; score: number; note: string }>
   evidence: Array<{ excerpt: string; dimensions: string[] }>
   risks: string[]
+  verdict: '建议进入下一轮' | '建议补充面试' | '不建议进入下一轮'
+  gaps: string[]
   recommendation: string
 }
 
@@ -347,6 +349,33 @@ export function getTechnicalQuestions(job: JobProfile, difficulty: QuestionMetad
   return (candidates.length ? candidates : fallback).slice(0, 12)
 }
 
+/** Select the next topic from the JD gaps, rather than advancing through a fixed question list. */
+export function selectNextInterviewQuestion(
+  job: JobProfile | null,
+  mode: InterviewMode,
+  askedQuestions: InterviewQuestion[],
+  difficulty: QuestionMetadata['difficulty'] = '进阶',
+  company?: CompanyProfile,
+): InterviewQuestion | undefined {
+  const askedIds = new Set(askedQuestions.map(question => question.id.replace(/-(follow-up-\d+|clarify)$/, '')))
+  const candidates = mode === 'technical'
+    ? getTechnicalQuestions(job || analyzeJobDescription('Java 后端工程师', ''), difficulty)
+    : getHrQuestions(job, company)
+  const remaining = candidates.filter(question => !askedIds.has(question.id))
+  if (mode !== 'technical' || !job) return remaining[0]
+
+  const coveredSkills = new Set(askedQuestions.flatMap(question => getQuestionMetadata(question.categoryId, question.title).skills))
+  return remaining.sort((left, right) => {
+    const leftSkill = getQuestionMetadata(left.categoryId, left.title).skills.find(skill => job.skills.includes(skill))
+    const rightSkill = getQuestionMetadata(right.categoryId, right.title).skills.find(skill => job.skills.includes(skill))
+    const leftRank = leftSkill ? job.skills.indexOf(leftSkill) : Number.MAX_SAFE_INTEGER
+    const rightRank = rightSkill ? job.skills.indexOf(rightSkill) : Number.MAX_SAFE_INTEGER
+    const leftCovered = leftSkill && coveredSkills.has(leftSkill) ? 1 : 0
+    const rightCovered = rightSkill && coveredSkills.has(rightSkill) ? 1 : 0
+    return leftCovered - rightCovered || leftRank - rightRank
+  })[0]
+}
+
 export interface RoleInterviewPlan {
   focusSkills: string[]
   questionCategories: string[]
@@ -517,6 +546,20 @@ export function createInterviewReport(
     if (/背景|方案|取舍|结果|因为|所以/.test(answer.toLowerCase())) dimensions.push('表达结构')
     return { excerpt: answer.length > 100 ? `${answer.slice(0, 100)}…` : answer, dimensions }
   })
+  const weakSkills = new Set(
+    turns.filter(item => item.score <= 1).flatMap(item =>
+      'question' in item ? getQuestionMetadata((item as { question: InterviewQuestion }).question.categoryId, (item as { question: InterviewQuestion }).question.title).skills : [],
+    ),
+  )
+  const coveredSkills = new Set(
+    turns.flatMap(item => 'question' in item ? getQuestionMetadata((item as { question: InterviewQuestion }).question.categoryId, (item as { question: InterviewQuestion }).question.title).skills : []),
+  )
+  const gaps = (job?.skills || []).filter(skill => weakSkills.has(skill) || !coveredSkills.has(skill)).map(skill =>
+    weakSkills.has(skill) ? `${skill}：回答未达到岗位要求的可验证深度。` : `${skill}：本轮未获得足够回答证据，仍需补充验证。`,
+  )
+  const verdict: InterviewReport['verdict'] = average >= 75 && gaps.length <= 1
+    ? '建议进入下一轮'
+    : average >= 45 ? '建议补充面试' : '不建议进入下一轮'
   return {
     overallScore: average,
     dimensions: [
@@ -527,6 +570,8 @@ export function createInterviewReport(
     ],
     evidence,
     risks,
+    verdict,
+    gaps,
     recommendation: `${risks.length
       ? `下一轮优先用一个真实项目案例补足证据，再进行技术深挖${companyFocus.length ? `，并关注 ${companyFocus[0]}` : ''}。`
       : `下一轮可提高难度，练习极端场景和方案取舍${companyFocus.length ? `，重点围绕 ${companyFocus[0]}` : ''}。`} ${getScoreLimitations()}`,
