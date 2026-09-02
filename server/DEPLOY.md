@@ -1,5 +1,15 @@
 # Cloudflare Worker 部署
 
+也可以在项目根目录直接运行一键脚本：
+
+```bash
+VITE_API_BASE_URL=https://你的-worker域名.workers.dev \\
+MODEL_API_KEY=你的模型密钥 \\
+./scripts/deploy-cloudflare.sh
+```
+
+脚本会登录检查、部署 Worker、写入可选的模型密钥、构建前端并部署 Pages。只部署 Worker 时设置 `SKIP_PAGES=1`。
+
 ## 1. 复制配置并部署 Worker
 
 ```bash
