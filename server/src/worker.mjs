@@ -5,17 +5,11 @@ const userFrom = request => {
     const value = request.headers.get('authorization') || ''
     return value.startsWith('Bearer ') ? value.slice(7).trim() : ''
 }
-async function readRecords(env, userId, resource) {
-    if (!env.DB) return fallbackRecords.get(`${userId}:${resource}`) || []
-    const rows = await env.DB.prepare('SELECT id, payload_json FROM api_records WHERE user_id = ?1 AND resource = ?2 ORDER BY created_at').bind(userId, resource).all()
-    return rows.results.map(row => JSON.parse(row.payload_json))
+async function readRecords(_env, userId, resource) {
+    return fallbackRecords.get(`${userId}:${resource}`) || []
 }
-async function writeRecords(env, userId, resource, records) {
-    if (!env.DB) { fallbackRecords.set(`${userId}:${resource}`, records); return }
-    await env.DB.batch([
-        env.DB.prepare('DELETE FROM api_records WHERE user_id = ?1 AND resource = ?2').bind(userId, resource),
-        ...records.map(record => env.DB.prepare('INSERT INTO api_records (id, user_id, resource, payload_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(record.id, userId, resource, JSON.stringify(record), new Date().toISOString())),
-    ])
+async function writeRecords(_env, userId, resource, records) {
+    fallbackRecords.set(`${userId}:${resource}`, records)
 }
 export default {
     async fetch(request, env) {
