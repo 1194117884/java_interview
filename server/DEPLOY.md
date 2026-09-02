@@ -10,6 +10,17 @@ MODEL_API_KEY=你的模型密钥 \\
 
 脚本会登录检查、部署 Worker、写入可选的模型密钥、构建前端并部署 Pages。只部署 Worker 时设置 `SKIP_PAGES=1`。
 
+## GitHub 推送自动部署
+
+仓库已提供 `.github/workflows/deploy-cloudflare.yml`。将代码推送到 `main` 后，GitHub Actions 会自动部署 Worker 和 Pages，不需要在本地手动执行 Wrangler。
+
+在 GitHub 仓库配置：
+
+- Secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、可选 `MODEL_API_KEY`
+- Variables：`VITE_API_BASE_URL`（Worker 公网地址）、可选 `CF_PAGES_PROJECT`（默认 `java-interview-web`）
+
+API Token 至少需要 Workers Scripts 编辑权限和 Pages 编辑权限。
+
 ## 1. 复制配置并部署 Worker
 
 ```bash
